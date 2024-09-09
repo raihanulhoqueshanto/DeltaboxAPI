@@ -1,0 +1,42 @@
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34511.84
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeltaboxAPI", "DeltaboxAPI\DeltaboxAPI.csproj", "{3C10C050-EDD3-4EE1-BE13-BC375DC54983}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeltaboxAPI.Domain", "DeltaboxAPI.Domain\DeltaboxAPI.Domain.csproj", "{A78263B4-7790-46D1-A6B3-C86566A78374}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeltaboxAPI.Application", "DeltaboxAPI.Application\DeltaboxAPI.Application.csproj", "{04808E1A-6742-4C92-A090-AE83AE05DA79}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeltaboxAPI.Infrastructure", "DeltaboxAPI.Infrastructure\DeltaboxAPI.Infrastructure.csproj", "{0075D083-6A5C-46C2-89D8-56836E704498}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3C10C050-EDD3-4EE1-BE13-BC375DC54983}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C10C050-EDD3-4EE1-BE13-BC375DC54983}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C10C050-EDD3-4EE1-BE13-BC375DC54983}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C10C050-EDD3-4EE1-BE13-BC375DC54983}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A78263B4-7790-46D1-A6B3-C86566A78374}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A78263B4-7790-46D1-A6B3-C86566A78374}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A78263B4-7790-46D1-A6B3-C86566A78374}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A78263B4-7790-46D1-A6B3-C86566A78374}.Release|Any CPU.Build.0 = Release|Any CPU
+		{04808E1A-6742-4C92-A090-AE83AE05DA79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{04808E1A-6742-4C92-A090-AE83AE05DA79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{04808E1A-6742-4C92-A090-AE83AE05DA79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{04808E1A-6742-4C92-A090-AE83AE05DA79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0075D083-6A5C-46C2-89D8-56836E704498}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0075D083-6A5C-46C2-89D8-56836E704498}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0075D083-6A5C-46C2-89D8-56836E704498}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0075D083-6A5C-46C2-89D8-56836E704498}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A61121E5-040B-412B-AAF2-20C68998AF15}
+	EndGlobalSection
+EndGlobal
