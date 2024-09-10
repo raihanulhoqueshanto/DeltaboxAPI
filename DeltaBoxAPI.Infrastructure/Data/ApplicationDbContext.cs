@@ -1,4 +1,6 @@
-﻿using DeltaBoxAPI.Domain.Entities.ContactManagement.Contact;
+﻿using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
+using DeltaBoxAPI.Domain.Entities.ContactManagement.Contact;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -8,12 +10,14 @@ using System.Threading.Tasks;
 
 namespace DeltaBoxAPI.Infrastructure.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
+
         }
 
+        public DbSet<TokenInfo> TokenInfos { get; set; }
         public DbSet<Contact> Contacts { get; set; }
     }
 }
