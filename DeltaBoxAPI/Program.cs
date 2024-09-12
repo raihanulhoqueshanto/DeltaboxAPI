@@ -93,6 +93,8 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddTransient<ITokenRepository, TokenRepository>();
+
 // Build the app.
 var app = builder.Build();
 
