@@ -30,4 +30,8 @@
     <ProjectReference Include="..\DeltaboxAPI.Domain\DeltaboxAPI.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Requests\DeltaBoxAPI\Token\Queries\" />
+  </ItemGroup>
+
 </Project>

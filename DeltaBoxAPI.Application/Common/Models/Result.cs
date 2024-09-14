@@ -13,7 +13,7 @@ namespace DeltaBoxAPI.Application.Common.Models
         public string StatusCode { get; set; }
         public object Optional { get; set; }
         public string[] Errors { get; set; }
-        internal Result(bool succeed, IEnumerable<string> errors, string success, object optional, string statusCode)
+        public Result(bool succeed, IEnumerable<string> errors, string success, object optional, string statusCode)
         {
             Succeed = succeed;
             Errors = errors.ToArray();

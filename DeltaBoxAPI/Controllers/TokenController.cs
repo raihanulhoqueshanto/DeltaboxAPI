@@ -1,20 +1,63 @@
-﻿using DeltaBoxAPI.Application.Common.Models.Repository;
+﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token.Commands;
+using DeltaBoxAPI.Application.Common.Models.Repository;
+using DeltaBoxAPI.Application.Requests.ContactManagement.Contacts.Commands;
 using DeltaBoxAPI.Infrastructure.Data;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DeltaboxAPI.Controllers
 {
-    [Route("api/[controller]/{action}")]
+    [Route("api/[controller]")]
     [ApiController]
     public class TokenController : ControllerBase
     {
+        private readonly IMediator _mediator;
         private readonly ApplicationDbContext _context;
-        private readonly ITokenRepository _tokenRepository;
 
-        public TokenController(ApplicationDbContext context, ITokenRepository tokenRepository)
+        public TokenController(IMediator mediator, ApplicationDbContext context = null)
         {
-            _context = context;
-            _tokenRepository = tokenRepository;
+            _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Refresh(RefreshTokenRequest command)
+        {
+            if (command == null)
+            {
+                return BadRequest("Invalid client request");
+            }
+
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+
+        //Revoken is used for removing token entry
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> Revoke()
+        {
+            try
+            {
+                var username = User.Identity.Name;
+                var user = _context.TokenInfos.SingleOrDefault(u => u.Username == username);
+
+                if (user == null)
+                {
+                    return BadRequest();
+                }
+
+                user.RefreshToken = null;
+                _context.SaveChanges();
+
+                return Ok(true);
+            }
+            catch (Exception)
+            {
+                return BadRequest();
+            }
         }
     }
 }

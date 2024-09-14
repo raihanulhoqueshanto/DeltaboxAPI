@@ -11,12 +11,12 @@ namespace DeltaBoxAPI.Application.Common.Models.Repository
 {
     public interface ITokenRepository
     {
-        // For previous authorization
-        string CreateJwtToken(IdentityUser user);
+        //// For previous authorization
+        //string CreateJwtToken(IdentityUser user);
 
-        // For new Authorization
-        TokenResponse GetToken(IEnumerable<Claim> claim);
-        string GetRefreshToken();
-        ClaimsPrincipal GetPrinciplalFromExpiredToken(string token);
+        //// For new Authorization
+        //TokenResponse GetToken(IEnumerable<Claim> claim);
+        //string GetRefreshToken();
+        //ClaimsPrincipal GetPrinciplalFromExpiredToken(string token);
     }
 }
