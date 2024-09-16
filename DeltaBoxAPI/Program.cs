@@ -1,17 +1,11 @@
-using DeltaBoxAPI.Application.Requests.ContactManagement.Contacts;
-using DeltaBoxAPI.Application.Requests.ContactManagement.Contacts.Commands;
 using DeltaBoxAPI.Infrastructure.Data;
-using DeltaBoxAPI.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using DeltaBoxAPI.Application.Common.Models.Repository;
 using Microsoft.OpenApi.Models;
-using DeltaboxAPI.Application.Common.Models.Repository;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -92,8 +86,6 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     };
 });
-
-builder.Services.AddTransient<ITokenRepository, TokenRepository>();
 
 // Build the app.
 var app = builder.Build();

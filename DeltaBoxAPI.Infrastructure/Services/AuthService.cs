@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
@@ -80,10 +81,10 @@ namespace DeltaboxAPI.Infrastructure.Services
                 }
                 catch (Exception ex)
                 {
-                    return Result.Failure(new List<string> { "Invalid info. try again!" }, null, null, "500");
+                    return Result.Failure("Failed", "500", new string[] { "Invalid info. try again!" }, null);
                 }
 
-                var data = new LoginResponse
+                var succeedData = new LoginResponse
                 {
                     Name = user.Name,
                     Username = user.UserName,
@@ -92,12 +93,55 @@ namespace DeltaboxAPI.Infrastructure.Services
                     Expiration = token.ValidTo
                 };
 
-                return Result.Success("Success", data, "200");
-
+                return Result.Success("Success", "200", new string[] { "Successfully logged in!" }, succeedData);
             }
-            //login failed condition
 
-            return Result.Failure(new List<string> { "Login failed! Try again." }, null, null, "500");
+            //login failed condition
+            var failedData = new LoginResponse
+            {
+                Name = "",
+                Username = "",
+                Token = "",
+                RefreshToken = "",
+                Expiration = null
+            };
+
+            return Result.Failure("Failed", "500", new string[] { "Invalid Username or Password!" }, null);
+        }
+
+        public async Task<Result> UserRegistrationRequest(RegistrationModel request)
+        {
+            // check if user exists
+            var userExists = await userManager.FindByNameAsync(request.Username);
+            if (userExists != null)
+            {
+                return Result.Failure("Failed", "500", new string[] { "Username already exists!" }, null);
+            }
+            var user = new ApplicationUser
+            {
+                UserName = request.Username,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                Email = request.Email,
+                Name = request.Name
+            };
+            // create a user here
+            var result = await userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+            {
+                return Result.Failure("Failed", "500", new string[] { "User creation failed!" }, null);
+            }
+
+            // add roles here
+            // for admin registration UserRoles.Admin instead of UserRoles.Roles
+            if (!await roleManager.RoleExistsAsync(UserRoles.User))
+                await roleManager.CreateAsync(new IdentityRole(UserRoles.User));
+
+            if (await roleManager.RoleExistsAsync(UserRoles.User))
+            {
+                await userManager.AddToRoleAsync(user, UserRoles.User);
+            }
+
+            return Result.Success("Success", "200", new string[] { "Successfully Registered!" }, null);
         }
     }
 }

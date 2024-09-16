@@ -1,5 +1,4 @@
 ﻿using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
-using DeltaBoxAPI.Domain.Entities.ContactManagement.Contact;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -18,6 +17,5 @@ namespace DeltaBoxAPI.Infrastructure.Data
         }
 
         public DbSet<TokenInfo> TokenInfos { get; set; }
-        public DbSet<Contact> Contacts { get; set; }
     }
 }

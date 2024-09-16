@@ -12,5 +12,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth
     public interface IAuthService : IDisposable
     {
         Task<Result> LoginRequest(LoginModel request);
+        Task<Result> UserRegistrationRequest(RegistrationModel request);
     }
 }

@@ -1,7 +1,4 @@
-﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token;
-using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token.Commands;
-using DeltaBoxAPI.Application.Common.Models.Repository;
-using DeltaBoxAPI.Application.Requests.ContactManagement.Contacts.Commands;
+﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token.Commands;
 using DeltaBoxAPI.Infrastructure.Data;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +19,7 @@ namespace DeltaboxAPI.Controllers
             _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
-        [HttpPost]
+        [HttpPost("[action]")]
         public async Task<IActionResult> Refresh(RefreshTokenRequest command)
         {
             if (command == null)
@@ -35,7 +32,7 @@ namespace DeltaboxAPI.Controllers
         }
 
         //Revoken is used for removing token entry
-        [HttpPost]
+        [HttpPost("[action]")]
         [Authorize]
         public async Task<IActionResult> Revoke()
         {

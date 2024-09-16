@@ -10,6 +10,9 @@ namespace DeltaboxAPI.Application.Common.Models.DTO
     public class RegistrationModel
     {
         [Required]
+        public string? Name { get; set; }
+
+        [Required]
         public string? Username { get; set; }
 
         [Required]
