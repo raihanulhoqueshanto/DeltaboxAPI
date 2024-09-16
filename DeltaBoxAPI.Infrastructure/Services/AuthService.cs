@@ -143,5 +143,64 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             return Result.Success("Success", "200", new string[] { "Successfully Registered!" }, null);
         }
+
+        public async Task<Result> ChangePasswordRequest(ChangePasswordModel request)
+        {
+            // lets find the user
+            var user = await userManager.FindByNameAsync(request.Username);
+            if (user is null)
+            {
+                return Result.Failure("Failed", "500", new string[] { "Invalid username!" }, null);
+            }
+            // check current password
+            if (!await userManager.CheckPasswordAsync(user, request.CurrentPassword))
+            {
+                return Result.Failure("Failed", "500", new string[] { "Invalid current password!" }, null);
+            }
+
+            // change password here
+            var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+            if (!result.Succeeded)
+            {
+                return Result.Failure("Failed", "500", new string[] { "Failed to change password!" }, null);
+            }
+
+            return Result.Success("Success", "200", new string[] { "Password has changed successfully!" }, null);
+        }
+
+        public async Task<Result> AdminRegistrationRequest(RegistrationModel request)
+        {
+            // check if user exists
+            var userExists = await userManager.FindByNameAsync(request.Username);
+            if (userExists != null)
+            {
+                return Result.Failure("Failed", "500", new string[] { "Username already exists!" }, null);
+            }
+            var user = new ApplicationUser
+            {
+                UserName = request.Username,
+                SecurityStamp = Guid.NewGuid().ToString(),
+                Email = request.Email,
+                Name = request.Name
+            };
+            // create a user here
+            var result = await userManager.CreateAsync(user, request.Password);
+            if (!result.Succeeded)
+            {
+                return Result.Failure("Failed", "500", new string[] { "User creation failed!" }, null);
+            }
+
+            // add roles here
+            // for admin registration UserRoles.Admin instead of UserRoles.Roles
+            if (!await roleManager.RoleExistsAsync(UserRoles.Admin))
+                await roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
+
+            if (await roleManager.RoleExistsAsync(UserRoles.Admin))
+            {
+                await userManager.AddToRoleAsync(user, UserRoles.Admin);
+            }
+
+            return Result.Success("Success", "200", new string[] { "Successfully Registered!" }, null);
+        }
     }
 }

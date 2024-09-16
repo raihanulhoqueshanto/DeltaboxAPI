@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DeltaboxAPI.Controllers
 {
-    [Route("api/[controller]/[action]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
     {
@@ -29,6 +29,20 @@ namespace DeltaboxAPI.Controllers
         public async Task<IActionResult> UserRegistration(RegistrationModel command)
         {
             var result = await _mediator.Send(new UserRegistrationRequest(command));
+            return Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> AdminRegistration(RegistrationModel command)
+        {
+            var result = await _mediator.Send(new AdminRegistrationRequest(command));
+            return Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ChangePassword(ChangePasswordModel command)
+        {
+            var result = await _mediator.Send(new ChangePasswordRequest(command));
             return Ok(result);
         }
     }

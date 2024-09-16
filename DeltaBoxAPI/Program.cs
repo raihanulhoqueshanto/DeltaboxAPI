@@ -7,12 +7,22 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
+using DeltaboxAPI.Infrastructure.Services;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token;
+using System.Reflection;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// Register custom services
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AdminRegistrationRequest).Assembly));
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();

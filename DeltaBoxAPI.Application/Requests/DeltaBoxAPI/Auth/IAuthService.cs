@@ -13,5 +13,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth
     {
         Task<Result> LoginRequest(LoginModel request);
         Task<Result> UserRegistrationRequest(RegistrationModel request);
+        Task<Result> AdminRegistrationRequest(RegistrationModel request);
+        Task<Result> ChangePasswordRequest(ChangePasswordModel request);
     }
 }
