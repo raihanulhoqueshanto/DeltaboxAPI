@@ -100,7 +100,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
-                expires: DateTime.Now.AddDays(7),
+                expires: DateTime.Now.AddDays(1),
                 claims: claim,
 
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
