@@ -1,4 +1,5 @@
-﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
+﻿using DeltaboxAPI.Application.Common.Interfaces;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token;
 using DeltaboxAPI.Infrastructure.Services;
 using DeltaBoxAPI.Infrastructure.Data;
@@ -33,6 +34,7 @@ namespace DeltaboxAPI.Infrastructure.IoC
             //The objects of this service are same within the every requests and changes with new requests
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<ICurrentUserService, CurrentUserService>();
 
             return services;
         }
