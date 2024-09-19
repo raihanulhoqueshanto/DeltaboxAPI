@@ -35,7 +35,7 @@ namespace DeltaboxAPI.Infrastructure.Services
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            _context.Dispose();
         }
 
         public async Task<Result> LoginRequest(LoginModel request)
@@ -134,7 +134,9 @@ namespace DeltaboxAPI.Infrastructure.Services
             // add roles here
             // for admin registration UserRoles.Admin instead of UserRoles.Roles
             if (!await roleManager.RoleExistsAsync(UserRoles.User))
+            {
                 await roleManager.CreateAsync(new IdentityRole(UserRoles.User));
+            }
 
             if (await roleManager.RoleExistsAsync(UserRoles.User))
             {
@@ -193,7 +195,9 @@ namespace DeltaboxAPI.Infrastructure.Services
             // add roles here
             // for admin registration UserRoles.Admin instead of UserRoles.Roles
             if (!await roleManager.RoleExistsAsync(UserRoles.Admin))
+            {
                 await roleManager.CreateAsync(new IdentityRole(UserRoles.Admin));
+            }
 
             if (await roleManager.RoleExistsAsync(UserRoles.Admin))
             {

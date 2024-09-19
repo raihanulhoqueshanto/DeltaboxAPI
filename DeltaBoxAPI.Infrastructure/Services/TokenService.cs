@@ -31,7 +31,7 @@ namespace DeltaboxAPI.Infrastructure.Services
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            _context.Dispose();
         }
 
         // For previous authorization
