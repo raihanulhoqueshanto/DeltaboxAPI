@@ -1,28 +1,24 @@
 using DeltaBoxAPI.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.DependencyInjection;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.OpenApi.Models;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
-using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
-using DeltaboxAPI.Infrastructure.Services;
-using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token;
-using System.Reflection;
-using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth.Commands;
+using DeltaboxAPI.Infrastructure.IoC;
+using DeltaboxAPI.Application.IoC;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
+// Use the configuration from the builder
+IConfiguration Configuration = builder.Configuration;
+
 // Register custom services
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(AdminRegistrationRequest).Assembly));
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddInfrastructure(Configuration);
+builder.Services.AddApplication();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -55,19 +51,6 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-
-// For Entity Framework
-
-// For SQL Server
-//builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// For MYSQL Server
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(8, 0, 36))
-    )
-);
 
 // For Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
