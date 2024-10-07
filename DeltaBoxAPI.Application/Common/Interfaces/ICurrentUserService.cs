@@ -8,8 +8,8 @@ namespace DeltaboxAPI.Application.Common.Interfaces
 {
     public interface ICurrentUserService
     {
-        int UserId { get; }
-        int RoleId { get; }
+        string UserId { get; }
+        string RoleId { get; }
         string Username { get; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using DeltaboxAPI.Application.Common.Interfaces;
 using DeltaboxAPI.Application.Common.Models;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
+using DeltaboxAPI.Domain.Entities.DeltaBox.Faqs;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -20,6 +21,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         }
 
         public DbSet<TokenInfo> TokenInfos { get; set; }
+        public DbSet<FaqsSetup> FaqsSetups { get; set; }
 
         // Will use this method to save anything on the database
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())

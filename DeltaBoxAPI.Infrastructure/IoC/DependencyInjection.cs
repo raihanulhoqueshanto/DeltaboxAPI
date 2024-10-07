@@ -1,5 +1,6 @@
 ﻿using DeltaboxAPI.Application.Common.Interfaces;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token;
 using DeltaboxAPI.Infrastructure.Services;
 using DeltaBoxAPI.Infrastructure.Data;
@@ -35,6 +36,7 @@ namespace DeltaboxAPI.Infrastructure.IoC
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<ICurrentUserService, CurrentUserService>();
+            services.AddScoped<IFaqsService, FaqsService>();
 
             return services;
         }

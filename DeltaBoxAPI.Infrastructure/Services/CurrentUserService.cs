@@ -13,12 +13,12 @@ namespace DeltaboxAPI.Infrastructure.Services
     {
         public CurrentUserService(IHttpContextAccessor httpContextAccessor)
         {
-            UserId = Convert.ToInt32(httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier));
-            RoleId = Convert.ToInt32(httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Role));
+            UserId = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+            RoleId = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Role);
             Username = httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Name);
         }
-        public int UserId { get; }
-        public int RoleId { get; }
+        public string UserId { get; }
+        public string RoleId { get; }
         public string Username { get; }
     }
 }
