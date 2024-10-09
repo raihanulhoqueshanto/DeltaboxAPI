@@ -5,9 +5,7 @@ using DeltaboxAPI.Domain.Entities.DeltaBox.Faqs;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DeltaBoxAPI.Infrastructure.Data
@@ -15,6 +13,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         private readonly ICurrentUserService _currentUserService;
+
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService currentUserService) : base(options)
         {
             _currentUserService = currentUserService;
@@ -23,7 +22,6 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<TokenInfo> TokenInfos { get; set; }
         public DbSet<FaqsSetup> FaqsSetups { get; set; }
 
-        // Will use this method to save anything on the database
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {
             try
@@ -47,13 +45,13 @@ namespace DeltaBoxAPI.Infrastructure.Data
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                //_logger.Error($"Concurrency error {ex.InnerException?.Message ?? ex.Message} \n {ex.InnerException?.StackTrace ?? ex.StackTrace}");
-                throw; // Or handle it appropriately
+                // Log the error
+                throw;
             }
             catch (Exception ex)
             {
-                //_logger.Error($"Save changes error {ex.InnerException?.Message ?? ex.Message} \n {ex.InnerException?.StackTrace ?? ex.StackTrace}");
-                throw; // Or handle it appropriately
+                // Log the error
+                throw;
             }
         }
     }

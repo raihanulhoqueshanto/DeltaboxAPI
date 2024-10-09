@@ -14,7 +14,7 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Faqs
     {
         [Column("id")]
         [Key]
-        public Guid Id { get; set; }
+        public int Id { get; set; }
 
         [Column("title")]
         public string Title { get; set; }
