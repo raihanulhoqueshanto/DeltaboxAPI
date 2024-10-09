@@ -1,6 +1,6 @@
 ﻿using DeltaboxAPI.Application.Common.Interfaces;
-using DeltaboxAPI.Application.Common.Models;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
+using DeltaboxAPI.Domain.Entities.DeltaBox.Common.Models;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Faqs;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;

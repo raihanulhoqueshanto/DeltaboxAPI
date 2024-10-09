@@ -60,6 +60,12 @@ namespace DeltaboxAPI.Infrastructure.Services
                     faqsObj.IsActive = request.IsActive;
 
                     _context.FaqsSetups.Update(faqsObj);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                         ? Result.Success("Success", "200", new[] { "Updated Successfully" }, null)
+                         : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
                 }
                 else
                 {
@@ -72,13 +78,13 @@ namespace DeltaboxAPI.Infrastructure.Services
                     }
 
                     await _context.FaqsSetups.AddAsync(request);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                         ? Result.Success("Success", "200", new[] { "Saved Successfully" }, null)
+                         : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
                 }
-
-                int result = await _context.SaveChangesAsync();
-
-                return result > 0
-                    ? Result.Success("Success", "200", new[] { request.Id != Guid.Empty ? "Updated Successfully!" : "Saved Successfully!" }, null)
-                    : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
             }
             catch (Exception ex)
             {

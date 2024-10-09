@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DeltaboxAPI.Domain.Entities.DeltaBox.Common.Models;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 namespace DeltaboxAPI.Domain.Entities.DeltaBox.Faqs
 {
     [Table("faqs_setup")]
-    public class FaqsSetup
+    public class FaqsSetup : CommonEntity
     {
         [Column("id")]
         [Key]
