@@ -51,5 +51,37 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateOrUpdateGeneralQuestion(GeneralQuestion command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new CreateOrUpdateGeneralQuestion(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetGeneralQuestions(int? id, string? question, string? isActive, string? getAll, int currentPage, int itemsPerPage)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetGeneralQuestions(id, question, isActive, getAll, currentPage, itemsPerPage));
+
+                PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

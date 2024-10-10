@@ -21,6 +21,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
 
         public DbSet<TokenInfo> TokenInfos { get; set; }
         public DbSet<FaqsSetup> FaqsSetups { get; set; }
+        public DbSet<GeneralQuestion> GeneralQuestions { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {

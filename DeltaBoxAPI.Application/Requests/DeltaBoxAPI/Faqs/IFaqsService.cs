@@ -15,5 +15,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs
     {
         Task<Result> CreateOrUpdateFaqs(FaqsSetup request);
         Task<PagedList<FaqsVM>> GetFaqs(GetFaqs request);
+        Task<Result> CreateOrUpdateGeneralQuestion(GeneralQuestion request);
+        Task<PagedList<GeneralQuestionVM>> GetGeneralQuestions(GetGeneralQuestions request);
     }
 }
