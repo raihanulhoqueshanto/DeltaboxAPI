@@ -31,4 +31,8 @@
     <ProjectReference Include="..\DeltaboxAPI.Infrastructure\DeltaboxAPI.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Images\Payment\PaymentProof\" />
+  </ItemGroup>
+
 </Project>

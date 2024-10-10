@@ -2,6 +2,7 @@
 using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Common.Models;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Faqs;
+using DeltaboxAPI.Domain.Entities.DeltaBox.Payment;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -22,6 +23,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<TokenInfo> TokenInfos { get; set; }
         public DbSet<FaqsSetup> FaqsSetups { get; set; }
         public DbSet<GeneralQuestion> GeneralQuestions { get; set; }
+        public DbSet<PaymentProof> PaymentProofs { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {
