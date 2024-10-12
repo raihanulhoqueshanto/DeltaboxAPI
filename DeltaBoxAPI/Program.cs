@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Common;
 using DeltaboxAPI.Infrastructure.IoC;
 using DeltaboxAPI.Application.IoC;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -99,6 +100,14 @@ app.UseCors(options => options.WithOrigins("*").AllowAnyOrigin().AllowAnyMethod(
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseStaticFiles();
+
+app.UseStaticFiles(new StaticFileOptions()
+{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), @"Images")),
+    RequestPath = new PathString("/Images")
+});
 
 app.MapControllers();
 
