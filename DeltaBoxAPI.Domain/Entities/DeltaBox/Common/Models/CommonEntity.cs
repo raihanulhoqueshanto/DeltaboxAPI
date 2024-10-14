@@ -9,12 +9,18 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Common.Models
 {
     public class CommonEntity
     {
+        [Column("ip")]
+        public string? Ip { get; set; }
+
         [Column("created_by")]
         public string? CreatedBy { get; set; }
+
         [Column("created_date")]
         public DateTime? CreatedDate { get; set; }
+
         [Column("updated_by")]
         public string? UpdatedBy { get; set; }
+
         [Column("updated_date")]
         public DateTime? UpdatedDate { get; set; }
     }

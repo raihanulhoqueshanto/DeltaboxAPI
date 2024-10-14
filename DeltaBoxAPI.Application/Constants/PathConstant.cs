@@ -9,5 +9,6 @@ namespace DeltaboxAPI.Application.Constants
     public static class PathConstant
     {
         public static string PAYMENT_PROOF_PATH = "/Images/Payment/PaymentProof/";
+        public static string PRODUCT_CATEGORY_PATH = "/Images/Prodcut/ProductCategory/";
     }
 }

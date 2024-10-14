@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <Folder Include="Images\Payment\PaymentProof\" />
+    <Folder Include="Images\Product\ProductCategory\" />
   </ItemGroup>
 
 </Project>
