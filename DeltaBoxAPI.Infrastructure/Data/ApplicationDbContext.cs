@@ -31,6 +31,10 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<GeneralQuestion> GeneralQuestions { get; set; }
         public DbSet<PaymentProof> PaymentProofs { get; set; }
         public DbSet<ProductCategory> ProductCategories { get; set; }
+        public DbSet<ProductProfile> ProductProfiles { get; set; }
+        public DbSet<ProductVariant> ProductVariants { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
+        public DbSet<ProductAttribute> ProductAttributes { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {
