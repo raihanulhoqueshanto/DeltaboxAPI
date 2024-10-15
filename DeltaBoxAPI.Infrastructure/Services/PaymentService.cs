@@ -79,6 +79,7 @@ namespace DeltaboxAPI.Infrastructure.Services
 
                     // Update existing Proof object
                     paymentProofObj.Name = request.Name;
+                    paymentProofObj.Image = request.Image;
                     paymentProofObj.IsActive = request.IsActive;
 
                     _context.PaymentProofs.Update(paymentProofObj);
