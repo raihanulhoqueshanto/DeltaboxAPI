@@ -137,6 +137,13 @@ namespace DeltaboxAPI.Infrastructure.Services
                 parameter.Add("Name", $"%{request.Name}%", DbType.String, ParameterDirection.Input);
             }
 
+            if (!string.IsNullOrEmpty(request.IsPopular))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} is_popular = @IsPopular");
+                conditionClause = " WHERE ";
+                parameter.Add("IsPopular", request.IsPopular, DbType.String, ParameterDirection.Input);
+            }
+
             if (!string.IsNullOrEmpty(request.IsActive))
             {
                 queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} is_active = @IsActive");
