@@ -42,7 +42,7 @@ namespace DeltaboxAPI.Controllers
         {
             try
             {
-                var result = await _mediator.Send(new GetProductCategory(id, name, isActive, getAll, currentPage, itemsPerPage));
+                var result = await _mediator.Send(new GetProductCategory(id, name, isPopular,isActive, getAll, currentPage, itemsPerPage));
 
                 PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
                 return Ok(result);
