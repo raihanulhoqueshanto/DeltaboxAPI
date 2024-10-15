@@ -12,13 +12,15 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product.Queries
     {
         public int? Id { get; set; }
         public string? Name { get; set; }
+        public string? IsPopular { get; set; }
         public string? IsActive { get; set; }
         public string? GetAll { get; set; }
 
-        public GetProductCategory(int? id, string? name, string? isActive, string? getAll, int currentPage, int itemsPerPage) : base(currentPage, itemsPerPage)
+        public GetProductCategory(int? id, string? name, string? isPopular, string? isActive, string? getAll, int currentPage, int itemsPerPage) : base(currentPage, itemsPerPage)
         {
             Id = id;
             Name = name;
+            IsPopular = isPopular;
             IsActive = isActive;
             GetAll = getAll;
         }

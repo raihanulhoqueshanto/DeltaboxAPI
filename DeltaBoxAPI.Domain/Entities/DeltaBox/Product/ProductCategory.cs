@@ -22,6 +22,9 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Product
         [Column("image")]
         public string Image { get; set; }
 
+        [Column("is_popular")]
+        public string IsPopular { get; set; }
+
         [Column("is_active")]
         public string IsActive { get; set; }
     }

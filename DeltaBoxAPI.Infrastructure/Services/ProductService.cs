@@ -79,6 +79,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                     // Update existing ProductCategory object
                     productCategoryObj.Name = request.Name;
                     productCategoryObj.Image = request.Image;
+                    productCategoryObj.IsPopular = request.IsPopular;
                     productCategoryObj.IsActive = request.IsActive;
 
                     _context.ProductCategories.Update(productCategoryObj);

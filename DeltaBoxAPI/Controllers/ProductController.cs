@@ -38,7 +38,7 @@ namespace DeltaboxAPI.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetProductCategory(int? id, string? name, string? isActive, string? getAll, int currentPage, int itemsPerPage)
+        public async Task<IActionResult> GetProductCategory(int? id, string? name, string? isPopular,string? isActive, string? getAll, int currentPage, int itemsPerPage)
         {
             try
             {
