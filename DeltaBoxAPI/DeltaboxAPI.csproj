@@ -33,7 +33,9 @@
 
   <ItemGroup>
     <Folder Include="Images\Payment\PaymentProof\" />
+    <Folder Include="Images\Product\ProductImage\" />
     <Folder Include="Images\Product\ProductCategory\" />
+    <Folder Include="Images\Product\ProductProfile\ThumbnailImage\" />
   </ItemGroup>
 
 </Project>

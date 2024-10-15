@@ -166,5 +166,248 @@ namespace DeltaboxAPI.Infrastructure.Services
             var result = await _mysqlContext.GetPagedListAsync<ProductCategoryVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
             return result;
         }
+
+        public async Task<Result> CreateOrUpdateProduct(CreateOrUpdateProductRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Name))
+                {
+                    return Result.Failure("Failed", "500", new[] { "Product name is required!" }, null);
+                }
+
+                if (!ImageDirectory.IsFileExists(_hostEnvironment, request.ThumbnailImage))
+                {
+                    var img = await Helper.SaveSingleImage(request.ThumbnailImage, PathConstant.PRODUCT_THUMBNAIL_IMAGE_PATH, _hostEnvironment);
+                    if (!img.Succeed)
+                    {
+                        return Result.Failure("Failed", "500", new[] { "Product thumbnail image not saved. Please try again!" }, null);
+                    }
+                    else
+                    {
+                        request.ThumbnailImage = img.Status;
+                    }
+                }
+
+                ProductProfile productProfile;
+
+                if (request.Id.HasValue && request.Id.Value > 0)
+                {
+                    // Update existing product
+                    productProfile = await _context.ProductProfiles.FindAsync(request.Id.Value);
+
+                    if (productProfile == null)
+                    {
+                        return Result.Failure("Failed", "404", new[] { "Product not found!" }, null);
+                    }
+
+                    // Update ProductProfile
+                    productProfile.Name = request.Name;
+                    productProfile.CategoryId = request.CategoryId;
+                    productProfile.Description = request.Description;
+                    productProfile.ThumbnailImage = request.ThumbnailImage;
+                    productProfile.IsActive = request.IsActive;
+
+                    _context.ProductProfiles.Update(productProfile);
+                }
+                else
+                {
+                    // Create new product
+                    productProfile = new ProductProfile
+                    {
+                        Name = request.Name,
+                        CategoryId = request.CategoryId,
+                        Description = request.Description,
+                        ThumbnailImage = request.ThumbnailImage,
+                        IsActive = request.IsActive
+                    };
+
+                    await _context.ProductProfiles.AddAsync(productProfile);
+                }
+
+                await _context.SaveChangesAsync(); // Save to get the ProductProfile ID if it's a new product
+
+                // Process variant groups
+                foreach (var group in request.VariantGroups)
+                {
+                    await ProcessVariantGroup(productProfile.Id, group);
+                }
+
+                // Remove variants that are not in the updated list
+                var allVariantIds = request.VariantGroups
+                    .SelectMany(g => g.Variants)
+                    .Where(v => v.Id.HasValue)
+                    .Select(v => v.Id.Value)
+                    .ToList();
+
+                var variantsToRemove = await _context.ProductVariants
+                    .Where(v => v.ProductId == productProfile.Id && !allVariantIds.Contains(v.Id))
+                    .ToListAsync();
+
+                _context.ProductVariants.RemoveRange(variantsToRemove);
+
+                await _context.SaveChangesAsync();
+
+                return Result.Success("Success", "200", new[] { "Product saved successfully" }, null);
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
+        }
+
+        private async Task ProcessVariantGroup(int productId, ProductVariantGroupRequest groupRequest)
+        {
+            foreach (var variantRequest in groupRequest.Variants)
+            {
+                await CreateOrUpdateProductVariant(productId, variantRequest, groupRequest.GroupName);
+            }
+        }
+
+        private async Task CreateOrUpdateProductVariant(int productId, ProductVariantRequest variantRequest, string groupName)
+        {
+            ProductVariant variant;
+
+            if (variantRequest.Id.HasValue && variantRequest.Id.Value > 0)
+            {
+                variant = await _context.ProductVariants.FindAsync(variantRequest.Id.Value);
+
+                if (variant == null)
+                {
+                    throw new Exception($"Variant with ID {variantRequest.Id.Value} not found.");
+                }
+
+                // Update existing variant
+                UpdateVariantProperties(variant, variantRequest, groupName);
+                _context.ProductVariants.Update(variant);
+            }
+            else
+            {
+                // Create new variant
+                variant = new ProductVariant
+                {
+                    ProductId = productId
+                };
+                UpdateVariantProperties(variant, variantRequest, groupName);
+
+                await _context.ProductVariants.AddAsync(variant);
+            }
+
+            await _context.SaveChangesAsync(); // Save to get the Variant ID if it's a new variant
+
+            // Handle Images
+            await HandleProductImages(variant.Id, variantRequest.Images);
+
+            // Handle Attributes
+            await HandleProductAttributes(variant.Id, variantRequest.Attributes);
+        }
+
+        private void UpdateVariantProperties(ProductVariant variant, ProductVariantRequest request, string groupName)
+        {
+            variant.Name = request.Name;
+            variant.SKU = request.SKU;
+            variant.DPPrice = request.DPPrice;
+            variant.Price = request.Price;
+            variant.StockQuantity = request.StockQuantity;
+            variant.DiscountAmount = request.DiscountAmount;
+            variant.DiscountStartDate = request.DiscountStartDate;
+            variant.DiscountEndDate = request.DiscountEndDate;
+            variant.IsActive = request.IsActive;
+            //variant.GroupName = groupName;
+        }
+
+        private async Task HandleProductImages(int variantId, List<string>? imageRequests)
+        {
+            if (imageRequests == null || !imageRequests.Any())
+            {
+                // If no images are provided, we might want to remove any existing images for this variant
+                var existedImages = await _context.ProductImages
+                    .Where(i => i.VariantId == variantId)
+                    .ToListAsync();
+                _context.ProductImages.RemoveRange(existedImages);
+                return;
+            }
+
+            var existingImages = await _context.ProductImages
+                .Where(i => i.VariantId == variantId)
+                .ToListAsync();
+
+            foreach (var imageRequest in imageRequests)
+            {
+                var existingImage = existingImages.FirstOrDefault(i => i.Image == imageRequest);
+                if (existingImage != null)
+                {
+                    // Image already exists, no need to update
+                    existingImages.Remove(existingImage);
+                }
+                else
+                {
+                    // Save the new image to the designated folder
+                    var img = await Helper.SaveSingleImage(imageRequest, PathConstant.PRODUCT_IMAGE_PATH, _hostEnvironment);
+                    if (!img.Succeed)
+                    {
+                        throw new Exception("Product image not saved. Please try again.");
+                    }
+                    else
+                    {
+                        // Create new image with saved path
+                        var newImage = new ProductImage
+                        {
+                            VariantId = variantId,
+                            Image = img.Status, // Path of the saved image
+                            IsActive = "Y"
+                        };
+                        await _context.ProductImages.AddAsync(newImage);
+                    }
+                }
+            }
+
+            // Remove images that are not in the updated list
+            _context.ProductImages.RemoveRange(existingImages);
+        }
+
+        private async Task HandleProductAttributes(int variantId, List<ProductAttributeRequest> attributeRequests)
+        {
+            if (attributeRequests == null) return;
+
+            var existingAttributes = await _context.ProductAttributes
+                .Where(a => a.VariantId == variantId)
+                .ToListAsync();
+
+            foreach (var attributeRequest in attributeRequests)
+            {
+                ProductAttribute attribute;
+
+                if (attributeRequest.Id.HasValue && attributeRequest.Id.Value > 0)
+                {
+                    attribute = existingAttributes.FirstOrDefault(a => a.Id == attributeRequest.Id.Value);
+                    if (attribute != null)
+                    {
+                        // Update existing attribute
+                        attribute.AttributeName = attributeRequest.AttributeName;
+                        attribute.AttributeValue = attributeRequest.AttributeValue;
+                        attribute.IsActive = attributeRequest.IsActive;
+                        _context.ProductAttributes.Update(attribute);
+                        existingAttributes.Remove(attribute);
+                    }
+                }
+                else
+                {
+                    // Create new attribute
+                    attribute = new ProductAttribute
+                    {
+                        VariantId = variantId,
+                        AttributeName = attributeRequest.AttributeName,
+                        AttributeValue = attributeRequest.AttributeValue,
+                        IsActive = attributeRequest.IsActive
+                    };
+                    await _context.ProductAttributes.AddAsync(attribute);
+                }
+            }
+
+            // Remove attributes that are not in the updated list
+            _context.ProductAttributes.RemoveRange(existingAttributes);
+        }
     }
 }
