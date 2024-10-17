@@ -33,6 +33,8 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
         public int? Id { get; set; }
         [Required]
         public string Name { get; set; }
+        [Required] 
+        public int CategoryId { get; set; }
         [Required]
         public string SKU { get; set; }
         [Required]
