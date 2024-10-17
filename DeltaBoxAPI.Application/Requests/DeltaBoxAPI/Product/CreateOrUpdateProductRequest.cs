@@ -18,12 +18,13 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
         public string ThumbnailImage { get; set; }
         public string IsActive { get; set; }
         [Required]
-        public List<ProductVariantGroupRequest> VariantGroups { get; set; }
+        public List<ColorwiseVariant> ColorGroups { get; set; }
     }
 
-    public class ProductVariantGroupRequest
+    public class ColorwiseVariant
     {
-        public string GroupName { get; set; } // e.g., "Color" or "Subscription Length"
+        public string ColorName { get; set; } // e.g., "Black" / "White"
+        public List<string>? Images { get; set; }
         public List<ProductVariantRequest> Variants { get; set; }
     }
 
@@ -35,7 +36,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
         [Required]
         public string SKU { get; set; }
         [Required]
-        public decimal DPPrice { get; set; }
+        public decimal DpPrice { get; set; }
         [Required]
         public decimal Price { get; set; }
         [Required]
@@ -44,7 +45,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
         public DateTime? DiscountStartDate { get; set; }
         public DateTime? DiscountEndDate { get; set; }
         public string IsActive { get; set; }
-        public List<string>? Images { get; set; } // Made optional
         public List<ProductAttributeRequest> Attributes { get; set; }
     }
 

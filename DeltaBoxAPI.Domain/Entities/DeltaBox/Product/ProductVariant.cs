@@ -29,7 +29,7 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Product
         public string SKU { get; set; }
 
         [Column("dp_price")]
-        public decimal DPPrice { get; set; }
+        public decimal DpPrice { get; set; }
 
         [Column("price")]
         public decimal Price { get; set; }

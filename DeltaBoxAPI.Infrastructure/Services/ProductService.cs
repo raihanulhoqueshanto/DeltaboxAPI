@@ -228,13 +228,13 @@ namespace DeltaboxAPI.Infrastructure.Services
                 await _context.SaveChangesAsync(); // Save to get the ProductProfile ID if it's a new product
 
                 // Process variant groups
-                foreach (var group in request.VariantGroups)
+                foreach (var group in request.ColorGroups)
                 {
                     await ProcessVariantGroup(productProfile.Id, group);
                 }
 
                 // Remove variants that are not in the updated list
-                var allVariantIds = request.VariantGroups
+                var allVariantIds = request.ColorGroups
                     .SelectMany(g => g.Variants)
                     .Where(v => v.Id.HasValue)
                     .Select(v => v.Id.Value)
@@ -257,15 +257,15 @@ namespace DeltaboxAPI.Infrastructure.Services
             }
         }
 
-        private async Task ProcessVariantGroup(int productId, ProductVariantGroupRequest groupRequest)
+        private async Task ProcessVariantGroup(int productId, ColorwiseVariant colorwiseVariant)
         {
-            foreach (var variantRequest in groupRequest.Variants)
+            foreach (var variantRequest in colorwiseVariant.Variants)
             {
-                await CreateOrUpdateProductVariant(productId, variantRequest, groupRequest.GroupName);
+                await CreateOrUpdateProductVariant(productId, variantRequest, colorwiseVariant.ColorName, colorwiseVariant.Images);
             }
         }
 
-        private async Task CreateOrUpdateProductVariant(int productId, ProductVariantRequest variantRequest, string groupName)
+        private async Task CreateOrUpdateProductVariant(int productId, ProductVariantRequest variantRequest, string colorName, List<string>? images)
         {
             ProductVariant variant;
 
@@ -279,7 +279,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                 }
 
                 // Update existing variant
-                UpdateVariantProperties(variant, variantRequest, groupName);
+                UpdateVariantProperties(variant, variantRequest);
                 _context.ProductVariants.Update(variant);
             }
             else
@@ -289,7 +289,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                 {
                     ProductId = productId
                 };
-                UpdateVariantProperties(variant, variantRequest, groupName);
+                UpdateVariantProperties(variant, variantRequest);
 
                 await _context.ProductVariants.AddAsync(variant);
             }
@@ -297,45 +297,41 @@ namespace DeltaboxAPI.Infrastructure.Services
             await _context.SaveChangesAsync(); // Save to get the Variant ID if it's a new variant
 
             // Handle Images
-            await HandleProductImages(variant.Id, variantRequest.Images);
+            await HandleProductImages(colorName, images);
 
             // Handle Attributes
             await HandleProductAttributes(variant.Id, variantRequest.Attributes);
         }
 
-        private void UpdateVariantProperties(ProductVariant variant, ProductVariantRequest request, string groupName)
+        private void UpdateVariantProperties(ProductVariant variant, ProductVariantRequest request)
         {
             variant.Name = request.Name;
             variant.SKU = request.SKU;
-            variant.DPPrice = request.DPPrice;
+            variant.DpPrice = request.DpPrice;
             variant.Price = request.Price;
             variant.StockQuantity = request.StockQuantity;
             variant.DiscountAmount = request.DiscountAmount;
             variant.DiscountStartDate = request.DiscountStartDate;
             variant.DiscountEndDate = request.DiscountEndDate;
             variant.IsActive = request.IsActive;
-            //variant.GroupName = groupName;
         }
 
-        private async Task HandleProductImages(int variantId, List<string>? imageRequests)
+        private async Task HandleProductImages(string colorName, List<string>? imageRequests)
         {
             if (imageRequests == null || !imageRequests.Any())
             {
                 // If no images are provided, we might want to remove any existing images for this variant
-                var existedImages = await _context.ProductImages
-                    .Where(i => i.VariantId == variantId)
-                    .ToListAsync();
+                var existedImages = await _context.ProductImages.Where(c => c.ColorName.Equals(colorName.Trim())).ToListAsync();
+
                 _context.ProductImages.RemoveRange(existedImages);
                 return;
             }
 
-            var existingImages = await _context.ProductImages
-                .Where(i => i.VariantId == variantId)
-                .ToListAsync();
+            var existingImages = await _context.ProductImages.Where(c => c.ColorName.Equals(colorName.Trim())).ToListAsync();
 
             foreach (var imageRequest in imageRequests)
             {
-                var existingImage = existingImages.FirstOrDefault(i => i.Image == imageRequest);
+                var existingImage = existingImages.FirstOrDefault(c => c.Image == imageRequest);
                 if (existingImage != null)
                 {
                     // Image already exists, no need to update
@@ -354,7 +350,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                         // Create new image with saved path
                         var newImage = new ProductImage
                         {
-                            VariantId = variantId,
+                            ColorName = colorName,
                             Image = img.Status, // Path of the saved image
                             IsActive = "Y"
                         };
@@ -369,11 +365,12 @@ namespace DeltaboxAPI.Infrastructure.Services
 
         private async Task HandleProductAttributes(int variantId, List<ProductAttributeRequest> attributeRequests)
         {
-            if (attributeRequests == null) return;
-
-            var existingAttributes = await _context.ProductAttributes
-                .Where(a => a.VariantId == variantId)
-                .ToListAsync();
+            if (attributeRequests == null)
+            {
+                return;
+            }
+            
+            var existingAttributes = await _context.ProductAttributes.Where(a => a.VariantId == variantId).ToListAsync();
 
             foreach (var attributeRequest in attributeRequests)
             {
