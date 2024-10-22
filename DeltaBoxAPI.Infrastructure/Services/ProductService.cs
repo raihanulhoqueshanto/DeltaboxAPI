@@ -536,7 +536,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             await _context.SaveChangesAsync(); // Save to get the Variant ID if it's a new variant
 
             // Handle Images
-            await HandleProductImages(colorName, images);
+            await HandleProductImages(productId, colorName, images);
 
             // Handle Attributes
             await HandleProductAttributes(variant.Id, variantRequest.Attributes);
@@ -558,7 +558,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             variant.IsActive = request.IsActive;
         }
 
-        private async Task HandleProductImages(string colorName, List<string>? imageRequests)
+        private async Task HandleProductImages(int productId, string colorName, List<string>? imageRequests)
         {
             if (imageRequests == null || !imageRequests.Any())
             {
@@ -592,6 +592,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                         // Create new image with saved path
                         var newImage = new ProductImage
                         {
+                            ProductId = productId,
                             ColorName = colorName,
                             Image = img.Status, // Path of the saved image
                             IsActive = "Y"
@@ -647,6 +648,120 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             // Remove attributes that are not in the updated list
             _context.ProductAttributes.RemoveRange(existingAttributes);
+        }
+
+        public async Task<PagedList<ProductVM>> GetProduct(GetProduct request)
+        {
+            string conditionClause = " ";
+            var queryBuilder = new StringBuilder();
+            var parameter = new DynamicParameters();
+
+            queryBuilder.AppendLine(@"SELECT p.*, pc.name as category_name, COUNT(*) OVER() as TotalItems FROM product_profile p LEFT JOIN product_category pc ON p.category_id = pc.id");
+
+            if (request.Id != null)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} p.id = @Id");
+                conditionClause = " WHERE ";
+                parameter.Add("Id", request.Id, DbType.Int32, ParameterDirection.Input);
+            }
+
+            if (request.CategoryId != null)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} p.category_id = @CategoryId");
+                conditionClause = " WHERE ";
+                parameter.Add("CategoryId", request.CategoryId, DbType.Int32, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.Name))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} p.name LIKE @Name");
+                conditionClause = " WHERE ";
+                parameter.Add("Name", $"%{request.Name}%", DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.IsActive))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} p.is_active = @IsActive");
+                conditionClause = " WHERE ";
+                parameter.Add("IsActive", request.IsActive, DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.GetAll) && request.GetAll.ToUpper() == "Y")
+            {
+                request.ItemsPerPage = 0;
+            }
+            else
+            {
+                queryBuilder.AppendLine("LIMIT @Offset, @ItemsPerPage");
+                parameter.Add("Offset", (request.CurrentPage - 1) * request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+                parameter.Add("ItemsPerPage", request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+            }
+
+            string query = queryBuilder.ToString();
+            var products = await _mysqlContext.GetPagedListAsync<ProductVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
+
+            // Load related data for each product
+            foreach (var product in products)
+            {
+                // Get color groups with images
+                var colorGroups = await _context.ProductImages
+                    .Where(pi => pi.ColorName != null && pi.ProductId == product.Id)
+                    .GroupBy(pi => pi.ColorName)
+                    .Select(g => new ColorwiseVariantVM
+                    {
+                        ColorName = g.Key,
+                        Images = g.Select(pi => pi.Image).ToList(),
+                        Variants = new List<ProductVariantVM>()
+                    })
+                    .ToListAsync();
+
+                // Get variants
+                var variants = await _context.ProductVariants
+                    .Where(v => v.ProductId == product.Id)
+                    .Select(v => new ProductVariantVM
+                    {
+                        Id = v.Id,
+                        Name = v.Name,
+                        CategoryId = v.CategoryId,
+                        SKU = v.SKU,
+                        DpPrice = v.DpPrice,
+                        Price = v.Price,
+                        StockQuantity = v.StockQuantity,
+                        DiscountAmount = v.DiscountAmount,
+                        DiscountStartDate = v.DiscountStartDate,
+                        DiscountEndDate = v.DiscountEndDate,
+                        IsActive = v.IsActive,
+                        Attributes = _context.ProductAttributes
+                            .Where(a => a.VariantId == v.Id)
+                            .Select(a => new ProductAttributeVM
+                            {
+                                Id = a.Id,
+                                AttributeName = a.AttributeName,
+                                AttributeValue = a.AttributeValue,
+                                IsActive = a.IsActive
+                            })
+                            .ToList()
+                    })
+                    .ToListAsync();
+
+                // Group variants by color
+                foreach (var variant in variants)
+                {
+                    var colorAttribute = variant.Attributes.FirstOrDefault(a => a.AttributeName.ToLower() == "color");
+                    if (colorAttribute != null)
+                    {
+                        var colorGroup = colorGroups.FirstOrDefault(cg => cg.ColorName.ToLower() == colorAttribute.AttributeValue.ToLower());
+                        if (colorGroup != null)
+                        {
+                            colorGroup.Variants.Add(variant);
+                        }
+                    }
+                }
+
+                product.ColorGroups = colorGroups;
+            }
+
+            return products;
         }
     }
 }

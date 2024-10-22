@@ -16,6 +16,9 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Product
         [Key]
         public int Id { get; set; }
 
+        [Column("product_id")]
+        public int ProductId { get; set; }
+
         [Column("color_name")]
         public string ColorName { get; set; }
 
