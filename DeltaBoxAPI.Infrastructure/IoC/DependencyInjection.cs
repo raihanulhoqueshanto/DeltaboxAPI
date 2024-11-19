@@ -1,5 +1,6 @@
 ﻿using DeltaboxAPI.Application.Common.Interfaces;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Payment;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product;
@@ -38,6 +39,7 @@ namespace DeltaboxAPI.Infrastructure.IoC
             services.AddScoped<IFaqsService, FaqsService>();
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<IProductService, ProductService>();
+            services.AddScoped<IBannerService, BannerService>();
 
             return services;
         }

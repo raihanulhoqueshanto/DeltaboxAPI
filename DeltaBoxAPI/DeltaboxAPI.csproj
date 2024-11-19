@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Images\Banner\BannerImage\" />
     <Folder Include="Images\Payment\PaymentProof\" />
     <Folder Include="Images\Product\ProductImage\" />
     <Folder Include="Images\Product\ProductCategory\" />
