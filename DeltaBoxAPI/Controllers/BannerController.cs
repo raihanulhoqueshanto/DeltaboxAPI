@@ -1,4 +1,6 @@
-﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner.Commands;
+﻿using DeltaboxAPI.Application.Common.Pagings;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner.Commands;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner.Queries;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Banner;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +28,23 @@ namespace DeltaboxAPI.Controllers
             try
             {
                 var result = await _mediator.Send(new CreateOrUpdateBranner(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetBanner(int? id, string? name, string? section, string? type, string? isActive, string? getAll, int currentPage, int itemsPerPage)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetBanner(id, name, section, type, isActive, getAll, currentPage, itemsPerPage));
+
+                PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
                 return Ok(result);
             }
             catch (Exception ex)

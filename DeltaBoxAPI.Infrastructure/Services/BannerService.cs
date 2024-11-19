@@ -1,5 +1,7 @@
-﻿using DeltaboxAPI.Application.Constants;
+﻿using DeltaboxAPI.Application.Common.Pagings;
+using DeltaboxAPI.Application.Constants;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner.Queries;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Banner;
 using DeltaboxAPI.Infrastructure.Utils;
 using DeltaBoxAPI.Application.Common.Models;
@@ -116,6 +118,11 @@ namespace DeltaboxAPI.Infrastructure.Services
                 var errorMessage = ex.InnerException?.Message ?? ex.Message;
                 return Result.Failure("Failed", "500", new[] { errorMessage }, null);
             }
+        }
+
+        public Task<PagedList<AdsBannerVM>> GetBanner(GetBanner request)
+        {
+            throw new NotImplementedException();
         }
     }
 }
