@@ -763,5 +763,10 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             return products;
         }
+
+        public Task<PagedList<FilterProductVM>> GetFilterProducts(GetFilterProducts request)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -16,5 +16,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
         Task<PagedList<ProductCategoryVM>> GetProductCategory(GetProductCategory request);
         Task<Result> CreateOrUpdateProduct(CreateOrUpdateProductRequest request);
         Task<PagedList<ProductVM>> GetProduct(GetProduct request);
+        Task<PagedList<FilterProductVM>> GetFilterProducts(GetFilterProducts request);
     }
 }
