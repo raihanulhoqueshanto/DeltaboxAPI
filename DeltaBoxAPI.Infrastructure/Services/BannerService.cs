@@ -180,5 +180,42 @@ namespace DeltaboxAPI.Infrastructure.Services
             var result = await _mysqlContext.GetPagedListAsync<AdsBannerVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
             return result;
         }
+
+        public async Task<List<List<AdsBannerVM>>> GetBannerForClient(GetBannerForClient request)
+        {
+            string conditionClause = " WHERE ";
+            var queryBuilder = new StringBuilder();
+            var parameter = new DynamicParameters();
+
+            queryBuilder.AppendLine("SELECT ads_banner.* FROM ads_banner WHERE is_active = 'Y' ");
+
+            if (!string.IsNullOrEmpty(request.Section))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} section = @Section");
+                conditionClause = " WHERE ";
+                parameter.Add("Section", request.Section, DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.Type))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} type = @Type");
+                conditionClause = " WHERE ";
+                parameter.Add("Type", request.Type, DbType.String, ParameterDirection.Input);
+            }
+
+            queryBuilder.AppendLine("ORDER BY type, id");
+
+            string query = queryBuilder.ToString();
+            var banners = await _mysqlContext.GetListAsync<AdsBannerVM>(query, parameter);
+
+            // Group banners by type and convert to the desired format
+            var groupedBanners = banners
+                .GroupBy(b => b.Type)
+                .OrderBy(g => g.Key)
+                .Select(g => g.ToList())
+                .ToList();
+
+            return groupedBanners;
+        }
     }
 }

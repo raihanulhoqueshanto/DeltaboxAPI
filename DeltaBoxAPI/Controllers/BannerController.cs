@@ -52,5 +52,20 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetBannerForClient(string? section, string? type)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetBannerForClient(section, type));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -70,5 +70,27 @@ namespace DeltaBoxAPI.Infrastructure.Data
                 await CloseConnectionAsync();
             }
         }
+
+        public async Task<IEnumerable<T>> GetListAsync<T>(string sqlQuery, DynamicParameters parameter)
+        {
+            await using var connection = _connection;
+            try
+            {
+                await OpenConnectionAsync();
+                DefaultTypeMap.MatchNamesWithUnderscores = true;
+                var result = await connection.QueryAsync<T>(sqlQuery, parameter);
+                await CloseConnectionAsync();
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await CloseConnectionAsync();
+                throw new Exception(ex.Message);
+            }
+            finally
+            {
+                await CloseConnectionAsync();
+            }
+        }
     }
 }
