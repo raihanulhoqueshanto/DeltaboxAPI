@@ -88,11 +88,11 @@ namespace DeltaboxAPI.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetFilterProducts(string? keyword, int? id, int? categoryId, string? getAll, int currentPage, int itemsPerPage)
+        public async Task<IActionResult> GetFilterProducts(string? keyword, int? id, int? categoryId, decimal? minPrice, decimal? maxPrice, string? attributeValue, string? getAll, int currentPage, int itemsPerPage)
         {
             try
             {
-                var result = await _mediator.Send(new GetFilterProducts(keyword, id, categoryId, getAll, currentPage, itemsPerPage));
+                var result = await _mediator.Send(new GetFilterProducts(keyword, id, categoryId, minPrice, maxPrice, attributeValue, getAll, currentPage, itemsPerPage));
 
                 PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
                 return Ok(result);

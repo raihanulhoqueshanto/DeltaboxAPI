@@ -13,13 +13,19 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product.Queries
         public string? Keyword { get; set; }
         public int? Id { get; set; }
         public int? CategoryId { get; set; }
+        public decimal? MinPrice { get; set; }
+        public decimal? MaxPrice { get; set; }
+        public string? AttributeValue { get; set; }
         public string? GetAll { get; set; }
 
-        public GetFilterProducts(string? keyword, int? id, int? categoryId, string? getAll, int currentPage, int itemsPerPage) : base(currentPage, itemsPerPage)
+        public GetFilterProducts(string? keyword, int? id, int? categoryId, decimal? minPrice, decimal? maxPrice, string? atrributeValue, string? getAll, int currentPage, int itemsPerPage) : base(currentPage, itemsPerPage)
         {
             Keyword = keyword;
             Id = id;
             CategoryId = categoryId;
+            MinPrice = minPrice;
+            MaxPrice = maxPrice;
+            AttributeValue = atrributeValue;
             GetAll = getAll;
         }
     }

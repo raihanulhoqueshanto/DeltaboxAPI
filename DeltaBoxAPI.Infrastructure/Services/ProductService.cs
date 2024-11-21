@@ -764,9 +764,87 @@ namespace DeltaboxAPI.Infrastructure.Services
             return products;
         }
 
-        public Task<PagedList<FilterProductVM>> GetFilterProducts(GetFilterProducts request)
+        public async Task<PagedList<FilterProductVM>> GetFilterProducts(GetFilterProducts request)
         {
-            throw new NotImplementedException();
+            string conditionClause = "";
+            var queryBuilder = new StringBuilder();
+            var parameter = new DynamicParameters();
+
+            queryBuilder.AppendLine("SELECT pp.id AS Id, ");
+            queryBuilder.AppendLine("pp.name AS Name, ");
+            queryBuilder.AppendLine("pp.thumbnail_image AS ThumbnailImage, ");
+            queryBuilder.AppendLine("MIN(pv.price) AS Price, ");
+            queryBuilder.AppendLine("CASE WHEN SUM(pv.stock_quantity) > 0 THEN 'In Stock' ELSE 'Out of Stock' END AS StockStatus, ");
+            queryBuilder.AppendLine("COUNT(*) OVER() AS TotalItems ");
+            queryBuilder.AppendLine("FROM product_profile pp ");
+            queryBuilder.AppendLine("LEFT JOIN product_variant pv ON pp.id = pv.product_id ");
+            queryBuilder.AppendLine("LEFT JOIN product_category pc ON pp.category_id = pc.id ");
+            queryBuilder.AppendLine("LEFT JOIN product_attribute pa ON pv.id = pa.variant_id ");
+
+            if (!string.IsNullOrEmpty(request.Keyword))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} (pp.name LIKE @Keyword OR pp.description LIKE @Keyword OR pv.sku LIKE @Keyword OR pc.name LIKE @Keyword)");
+                conditionClause = "WHERE";
+                parameter.Add("Keyword", $"%{request.Keyword}%", DbType.String);
+            }
+
+            if (request.Id.HasValue)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pp.id = @Id");
+                conditionClause = "WHERE";
+                parameter.Add("Id", request.Id.Value, DbType.Int32);
+            }
+
+            if (request.CategoryId.HasValue)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pp.category_id = @CategoryId");
+                conditionClause = "WHERE";
+                parameter.Add("CategoryId", request.CategoryId.Value, DbType.Int32);
+            }
+
+            if (request.MinPrice.HasValue && request.MaxPrice.HasValue)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pv.price BETWEEN @MinPrice AND @MaxPrice");
+                conditionClause = "WHERE";
+                parameter.Add("MinPrice", request.MinPrice.Value, DbType.Decimal);
+                parameter.Add("MaxPrice", request.MaxPrice.Value, DbType.Decimal);
+            }
+
+            if (!string.IsNullOrEmpty(request.AttributeValue))
+            {
+                var attributeValues = request.AttributeValue.Split(',')
+                                                            .Select((v, i) => new { Value = v.Trim(), ParamName = $"@AttributeValue{i}" })
+                                                            .ToList();
+
+                var inClause = string.Join(", ", attributeValues.Select(a => a.ParamName));
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pa.attribute_value IN ({inClause})");
+                conditionClause = "WHERE";
+
+                foreach (var attributeValue in attributeValues)
+                {
+                    parameter.Add(attributeValue.ParamName, attributeValue.Value, DbType.String);
+                }
+            }
+
+            queryBuilder.AppendLine("GROUP BY pp.id, pp.name, pp.thumbnail_image ");
+            queryBuilder.AppendLine("ORDER BY pp.id ");
+
+            if (string.IsNullOrEmpty(request.GetAll) || request.GetAll.ToUpper() != "Y")
+            {
+                queryBuilder.AppendLine("LIMIT @Offset, @ItemsPerPage");
+                parameter.Add("Offset", (request.CurrentPage - 1) * request.ItemsPerPage, DbType.Int32);
+                parameter.Add("ItemsPerPage", request.ItemsPerPage, DbType.Int32);
+            }
+
+            var query = queryBuilder.ToString();
+            var result = await _mysqlContext.GetPagedListAsync<FilterProductVM>(
+                request.CurrentPage,
+                request.ItemsPerPage,
+                query,
+                parameter
+            );
+
+            return result;
         }
     }
 }
