@@ -563,13 +563,13 @@ namespace DeltaboxAPI.Infrastructure.Services
             if (imageRequests == null || !imageRequests.Any())
             {
                 // If no images are provided, we might want to remove any existing images for this variant
-                var existedImages = await _context.ProductImages.Where(c => c.ColorName.Equals(colorName.Trim())).ToListAsync();
+                var existedImages = await _context.ProductImages.Where(c => c.ColorName.Equals(colorName.Trim()) && c.ProductId == productId).ToListAsync();
 
                 _context.ProductImages.RemoveRange(existedImages);
                 return;
             }
 
-            var existingImages = await _context.ProductImages.Where(c => c.ColorName.Equals(colorName.Trim())).ToListAsync();
+            var existingImages = await _context.ProductImages.Where(c => c.ColorName.Equals(colorName.Trim()) && c.ProductId == productId).ToListAsync();
 
             foreach (var imageRequest in imageRequests)
             {
