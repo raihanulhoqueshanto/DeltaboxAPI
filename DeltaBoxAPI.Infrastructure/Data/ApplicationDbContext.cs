@@ -13,6 +13,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Banner;
+using DeltaboxAPI.Domain.Entities.DeltaBox.Brand;
 
 namespace DeltaBoxAPI.Infrastructure.Data
 {
@@ -37,6 +38,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<ProductImage> ProductImages { get; set; }
         public DbSet<ProductAttribute> ProductAttributes { get; set; }
         public DbSet<AdsBanner> AdsBanners { get; set; }
+        public DbSet<AssociateBrand> AssociateBrands { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {
