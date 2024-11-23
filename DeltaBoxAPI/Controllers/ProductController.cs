@@ -39,11 +39,11 @@ namespace DeltaboxAPI.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetProductCategory(int? id, string? name, string? isPopular,string? isActive, string? getAll, int currentPage, int itemsPerPage)
+        public async Task<IActionResult> GetProductCategory(int? id, string? name, string? isPopular, string? isActive, string? getAll, int currentPage, int itemsPerPage)
         {
             try
             {
-                var result = await _mediator.Send(new GetProductCategory(id, name, isPopular,isActive, getAll, currentPage, itemsPerPage));
+                var result = await _mediator.Send(new GetProductCategory(id, name, isPopular, isActive, getAll, currentPage, itemsPerPage));
 
                 PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
                 return Ok(result);
@@ -95,6 +95,22 @@ namespace DeltaboxAPI.Controllers
                 var result = await _mediator.Send(new GetFilterProducts(keyword, id, categoryId, minPrice, maxPrice, attributeValue, getAll, currentPage, itemsPerPage));
 
                 PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFilterOptions()
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetFilterOptions());
+
                 return Ok(result);
             }
             catch (Exception ex)

@@ -846,5 +846,77 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             return result;
         }
+
+        public async Task<FilterOptionVM> GetFilterOptions(GetFilterOptions request)
+        {
+            try
+            {
+                // Get availability options
+                var availability = new List<FilterAvailability>
+                {
+                    new FilterAvailability { Name = "In Stock" },
+                    new FilterAvailability { Name = "Out of Stock" }
+                };
+
+                // Get price range
+                var maxPrice = await _context.ProductVariants
+                    .Where(pv => pv.IsActive == "Y")
+                    .MaxAsync(pv => (decimal?)pv.Price) ?? 0;
+
+                var priceRange = new FilterPrice
+                {
+                    MinPrice = 0,
+                    MaxPrice = maxPrice
+                };
+
+                // Get active categories
+                var categories = await _context.ProductCategories
+                    .Where(pc => pc.IsActive == "Y")
+                    .Select(pc => new FilterCategory
+                    {
+                        Id = pc.Id,
+                        Name = pc.Name
+                    })
+                    .ToListAsync();
+
+                // Get subscription plans (colors)
+                var plans = await _context.ProductAttributes
+                    .Where(pa => pa.IsActive == "Y" &&
+                               pa.AttributeName.ToLower() == "color")
+                    .Select(pa => pa.AttributeValue)
+                    .Distinct()
+                    .Select(value => new FilterPlan { Name = value })
+                    .ToListAsync();
+
+                // Get subscription durations (non-colors)
+                var durations = await _context.ProductAttributes
+                    .Where(pa => pa.IsActive == "Y" &&
+                               pa.AttributeName.ToLower() != "color")
+                    .Select(pa => pa.AttributeValue)
+                    .Distinct()
+                    .Select(value => new FilterDuration { Name = value })
+                    .ToListAsync();
+
+                // Combine all filter options
+                var filterOptions = new FilterOptionVM
+                {
+                    Availability = availability,
+                    Price = priceRange,
+                    Categories = categories,
+                    Subscriptions = new FilterSubscription
+                    {
+                        Plan = plans,
+                        Duration = durations
+                    }
+                };
+
+                return filterOptions;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception if you have logging configured
+                throw new Exception("Error retrieving filter options", ex);
+            }
+        }
     }
 }
