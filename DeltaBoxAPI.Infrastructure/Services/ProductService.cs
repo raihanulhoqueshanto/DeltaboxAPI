@@ -854,8 +854,16 @@ namespace DeltaboxAPI.Infrastructure.Services
                 // Get availability options
                 var availability = new List<FilterAvailability>
                 {
-                    new FilterAvailability { Name = "In Stock" },
-                    new FilterAvailability { Name = "Out of Stock" }
+                    new FilterAvailability
+                    {
+                        Name = "In Stock",
+                        Value = "instock"
+                    },
+                    new FilterAvailability
+                    {
+                        Name = "Out of Stock",
+                        Value = "outofstock"
+                    }
                 };
 
                 // Get price range
@@ -880,22 +888,36 @@ namespace DeltaboxAPI.Infrastructure.Services
                     .ToListAsync();
 
                 // Get subscription plans (colors)
-                var plans = await _context.ProductAttributes
+                var plansQuery = await _context.ProductAttributes
                     .Where(pa => pa.IsActive == "Y" &&
                                pa.AttributeName.ToLower() == "color")
                     .Select(pa => pa.AttributeValue)
                     .Distinct()
-                    .Select(value => new FilterPlan { Name = value })
                     .ToListAsync();
 
+                var plans = plansQuery
+                    .Select(value => new FilterPlan
+                    {
+                        Name = value,
+                        Value = value.Replace(" ", "").ToLower()
+                    })
+                    .ToList();
+
                 // Get subscription durations (non-colors)
-                var durations = await _context.ProductAttributes
+                var durationsQuery = await _context.ProductAttributes
                     .Where(pa => pa.IsActive == "Y" &&
                                pa.AttributeName.ToLower() != "color")
                     .Select(pa => pa.AttributeValue)
                     .Distinct()
-                    .Select(value => new FilterDuration { Name = value })
                     .ToListAsync();
+
+                var durations = durationsQuery
+                    .Select(value => new FilterDuration
+                    {
+                        Name = value,
+                        Value = value.Replace(" ", "").ToLower()
+                    })
+                    .ToList();
 
                 // Combine all filter options
                 var filterOptions = new FilterOptionVM
@@ -917,6 +939,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                 // Log the exception if you have logging configured
                 throw new Exception("Error retrieving filter options", ex);
             }
+
         }
     }
 }

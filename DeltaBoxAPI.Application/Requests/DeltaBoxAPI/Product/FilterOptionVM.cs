@@ -17,6 +17,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
     public class FilterAvailability
     {
         public string Name { get; set; }
+        public string Value { get; set; }
     }
 
     public class FilterPrice
@@ -40,10 +41,12 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
     public class FilterPlan
     {
         public string Name { get; set; }
+        public string Value { get; set; }
     }
 
     public class FilterDuration
     {
         public string Name { get; set; }
+        public string Value { get; set; }
     }
 }
