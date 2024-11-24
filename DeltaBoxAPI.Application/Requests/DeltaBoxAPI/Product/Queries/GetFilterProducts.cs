@@ -12,20 +12,26 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product.Queries
     {
         public string? Keyword { get; set; }
         public int? Id { get; set; }
-        public int? CategoryId { get; set; }
+        public string? CategoryId { get; set; }
+        public string? Stock { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
-        public string? AttributeValue { get; set; }
+        public string? Plan { get; set; }
+        public string? Duration { get; set; }
+        public string? SortBy { get; set; }
         public string? GetAll { get; set; }
 
-        public GetFilterProducts(string? keyword, int? id, int? categoryId, decimal? minPrice, decimal? maxPrice, string? atrributeValue, string? getAll, int currentPage, int itemsPerPage) : base(currentPage, itemsPerPage)
+        public GetFilterProducts(string? keyword, int? id, string? categoryId, string? stock, decimal? minPrice, decimal? maxPrice, string? plan, string? duration, string? sortBy, string? getAll, int currentPage, int itemsPerPage) : base(currentPage, itemsPerPage)
         {
             Keyword = keyword;
             Id = id;
             CategoryId = categoryId;
+            Stock = stock;
             MinPrice = minPrice;
             MaxPrice = maxPrice;
-            AttributeValue = atrributeValue;
+            Plan = plan;
+            Duration = duration;
+            SortBy = sortBy;
             GetAll = getAll;
         }
     }

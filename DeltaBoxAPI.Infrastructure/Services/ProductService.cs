@@ -795,11 +795,20 @@ namespace DeltaboxAPI.Infrastructure.Services
                 parameter.Add("Id", request.Id.Value, DbType.Int32);
             }
 
-            if (request.CategoryId.HasValue)
+            if (!string.IsNullOrEmpty(request.CategoryId))
             {
-                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pp.category_id = @CategoryId");
+                var categoryIds = request.CategoryId.Split(',')
+                                                  .Select((v, i) => new { Value = v.Trim(), ParamName = $"@CategoryId{i}" })
+                                                  .ToList();
+
+                var inClause = string.Join(", ", categoryIds.Select(c => c.ParamName));
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pp.category_id IN ({inClause})");
                 conditionClause = "WHERE";
-                parameter.Add("CategoryId", request.CategoryId.Value, DbType.Int32);
+
+                foreach (var categoryId in categoryIds)
+                {
+                    parameter.Add(categoryId.ParamName, int.Parse(categoryId.Value), DbType.Int32);
+                }
             }
 
             if (request.MinPrice.HasValue && request.MaxPrice.HasValue)
@@ -810,24 +819,95 @@ namespace DeltaboxAPI.Infrastructure.Services
                 parameter.Add("MaxPrice", request.MaxPrice.Value, DbType.Decimal);
             }
 
-            if (!string.IsNullOrEmpty(request.AttributeValue))
+            if (!string.IsNullOrEmpty(request.Stock))
             {
-                var attributeValues = request.AttributeValue.Split(',')
-                                                            .Select((v, i) => new { Value = v.Trim(), ParamName = $"@AttributeValue{i}" })
-                                                            .ToList();
-
-                var inClause = string.Join(", ", attributeValues.Select(a => a.ParamName));
-                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pa.attribute_value IN ({inClause})");
-                conditionClause = "WHERE";
-
-                foreach (var attributeValue in attributeValues)
+                if (request.Stock.ToLower() == "instock")
                 {
-                    parameter.Add(attributeValue.ParamName, attributeValue.Value, DbType.String);
+                    queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pv.stock_quantity > 0");
+                    conditionClause = "WHERE";
+                }
+                else if (request.Stock.ToLower() == "outofstock")
+                {
+                    queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pv.stock_quantity <= 0");
+                    conditionClause = "WHERE";
                 }
             }
 
+            // Handle both plan and duration values together
+            if (!string.IsNullOrEmpty(request.Plan) || !string.IsNullOrEmpty(request.Duration))
+            {
+                var attributeConditions = new List<string>();
+
+                // Handle plan values
+                if (!string.IsNullOrEmpty(request.Plan))
+                {
+                    var planValues = request.Plan.Split(',')
+                                               .Select((v, i) => new {
+                                                   Value = v.Replace(" ", "").ToLower(),
+                                                   ParamName = $"@Plan{i}"
+                                               })
+                                               .ToList();
+
+                    var planInClause = string.Join(", ", planValues.Select(p => p.ParamName));
+                    attributeConditions.Add($"LOWER(REPLACE(pa.attribute_value, ' ', '')) IN ({planInClause})");
+
+                    foreach (var planValue in planValues)
+                    {
+                        parameter.Add(planValue.ParamName, planValue.Value, DbType.String);
+                    }
+                }
+
+                // Handle duration values
+                if (!string.IsNullOrEmpty(request.Duration))
+                {
+                    var durationValues = request.Duration.Split(',')
+                                                       .Select((v, i) => new {
+                                                           Value = v.Replace(" ", "").ToLower(),
+                                                           ParamName = $"@Duration{i}"
+                                                       })
+                                                       .ToList();
+
+                    var durationInClause = string.Join(", ", durationValues.Select(d => d.ParamName));
+                    attributeConditions.Add($"LOWER(REPLACE(pa.attribute_value, ' ', '')) IN ({durationInClause})");
+
+                    foreach (var durationValue in durationValues)
+                    {
+                        parameter.Add(durationValue.ParamName, durationValue.Value, DbType.String);
+                    }
+                }
+
+                // Combine conditions with OR
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} ({string.Join(" OR ", attributeConditions)})");
+                conditionClause = "WHERE";
+            }
+
             queryBuilder.AppendLine("GROUP BY pp.id, pp.name, pp.thumbnail_image ");
-            queryBuilder.AppendLine("ORDER BY pp.id ");
+
+            if (!string.IsNullOrEmpty(request.SortBy))
+            {
+                switch (request.SortBy.ToUpper())
+                {
+                    case "HTOL":
+                        queryBuilder.AppendLine("ORDER BY MIN(pv.price) DESC ");
+                        break;
+                    case "LTOH":
+                        queryBuilder.AppendLine("ORDER BY MIN(pv.price) ASC ");
+                        break;
+                    case "ATOZ":
+                        queryBuilder.AppendLine("ORDER BY pp.name ASC ");
+                        break;
+                    case "ZTOA":
+                        queryBuilder.AppendLine("ORDER BY pp.name DESC ");
+                        break;
+                    default:
+                        queryBuilder.AppendLine("ORDER BY pp.id ");
+                        break;
+                }
+            }
+            else
+            {
+                queryBuilder.AppendLine("ORDER BY pp.id ");
+            }
 
             if (string.IsNullOrEmpty(request.GetAll) || request.GetAll.ToUpper() != "Y")
             {
