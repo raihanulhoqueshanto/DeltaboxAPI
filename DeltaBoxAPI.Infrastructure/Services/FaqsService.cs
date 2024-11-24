@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using DeltaboxAPI.Application.Common.Interfaces;
 using DeltaboxAPI.Application.Common.Pagings;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs.Commands;
@@ -21,11 +22,13 @@ namespace DeltaboxAPI.Infrastructure.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly MysqlDbContext _mysqlContext;
+        private readonly ICurrentUserService _currentUserService;
 
-        public FaqsService(ApplicationDbContext context, MysqlDbContext mysqlContext)
+        public FaqsService(ApplicationDbContext context, MysqlDbContext mysqlContext, ICurrentUserService currentUserService)
         {
             _context = context;
             _mysqlContext = mysqlContext;
+            _currentUserService = currentUserService;
         }
 
         public void Dispose()
@@ -256,6 +259,90 @@ namespace DeltaboxAPI.Infrastructure.Services
             string query = queryBuilder.ToString();
             var result = await _mysqlContext.GetPagedListAsync<GeneralQuestionVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
             return result;
+        }
+
+        public async Task<Result> CreateOrUpdateProductFaq(ProductFaq request)
+        {
+            try
+            {
+                var role = _currentUserService.RoleId;
+
+                if (string.IsNullOrWhiteSpace(request.Question))
+                {
+                    return Result.Failure("Failed", "500", new[] { "Question is required!" }, null);
+                }
+
+                // Normalize question for comparison
+                var normalizedQuestion = request.Question.Replace(" ", "").ToLower();
+
+                if (request.Id > 0)
+                {
+                    // Update scenario
+                    if (role != "Admin")
+                    {
+                        return Result.Failure("Failed", "403", new[] { "Only administrators can update FAQ entries." }, null);
+                    }
+
+                    var faqObj = await _context.ProductFaqs.FindAsync(request.Id);
+
+                    if (faqObj == null)
+                    {
+                        return Result.Failure("Failed", "404", new[] { "FAQ entry not found!" }, null);
+                    }
+
+                    // Check for duplicate question, excluding current FAQ
+                    var existingFaq = await _context.ProductFaqs
+                        .FirstOrDefaultAsync(f => f.Question.Replace(" ", "").ToLower() == normalizedQuestion
+                                                && f.Id != request.Id
+                                                && f.ProductId == request.ProductId);
+
+                    if (existingFaq != null)
+                    {
+                        return Result.Failure("Failed", "409", new[] { "Question already exists for this product!" }, null);
+                    }
+
+                    // Update existing FAQ
+                    faqObj.ProductId = request.ProductId;
+                    faqObj.CustomerName = request.CustomerName;
+                    faqObj.CustomerEmail = request.CustomerEmail;
+                    faqObj.Question = request.Question;
+                    faqObj.Answer = request.Answer;
+                    faqObj.IsActive = request.IsActive;
+
+                    _context.ProductFaqs.Update(faqObj);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                         ? Result.Success("Success", "200", new[] { "Updated Successfully" }, null)
+                         : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+                }
+                else
+                {
+                    // Create scenario
+                    var existingFaq = await _context.ProductFaqs
+                        .FirstOrDefaultAsync(f => f.Question.Replace(" ", "").ToLower() == normalizedQuestion
+                                                && f.ProductId == request.ProductId);
+
+                    if (existingFaq != null)
+                    {
+                        return Result.Failure("Failed", "409", new[] { "Question already exists for this product!" }, null);
+                    }
+                    request.Answer = String.Empty;
+                    await _context.ProductFaqs.AddAsync(request);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                         ? Result.Success("Success", "200", new[] { "Saved Successfully" }, null)
+                         : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
         }
     }
 }

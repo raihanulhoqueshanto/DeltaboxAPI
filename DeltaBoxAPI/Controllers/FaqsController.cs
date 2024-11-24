@@ -83,5 +83,20 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateOrUpdateProductFaq(ProductFaq command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new CreateOrUpdateProductFaq(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
