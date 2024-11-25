@@ -344,5 +344,66 @@ namespace DeltaboxAPI.Infrastructure.Services
                 return Result.Failure("Failed", "500", new[] { errorMessage }, null);
             }
         }
+
+        public async Task<PagedList<ProductFaqVM>> GetProductFaq(GetProductFaq request)
+        {
+            string conditionClause = " ";
+            var queryBuilder = new StringBuilder();
+            var parameter = new DynamicParameters();
+            var role = _currentUserService.RoleId;
+
+            queryBuilder.AppendLine("SELECT product_faq.*, count(*) over() as TotalItems FROM product_faq ");
+
+            if (request.Id != null)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} id = @Id");
+                conditionClause = " WHERE ";
+                parameter.Add("Id", request.Id, DbType.Int32, ParameterDirection.Input);
+            }
+
+            if (request.ProductId != null)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} product_id = @ProductId");
+                conditionClause = " WHERE ";
+                parameter.Add("ProductId", request.ProductId, DbType.Int32, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.Keyword))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} (customer_name LIKE @Keyword OR customer_email LIKE @Keyword OR question LIKE @Keyword OR answer LIKE @Keyword)");
+                conditionClause = " WHERE ";
+                parameter.Add("Keyword", $"%{request.Keyword}%", DbType.String, ParameterDirection.Input);
+            }
+
+            // Handle IsActive based on role
+            if (role != "Admin")
+            {
+                // Non-admin users can only see active records
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} is_active = 'Y'");
+                conditionClause = " WHERE ";
+            }
+            else if (!string.IsNullOrEmpty(request.IsActive))
+            {
+                // Admin can filter by IsActive if specified
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} is_active = @IsActive");
+                conditionClause = " WHERE ";
+                parameter.Add("IsActive", request.IsActive, DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.GetAll) && request.GetAll.ToUpper() == "Y")
+            {
+                request.ItemsPerPage = 0;
+            }
+            else
+            {
+                queryBuilder.AppendLine("LIMIT @Offset, @ItemsPerPage");
+                parameter.Add("Offset", (request.CurrentPage - 1) * request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+                parameter.Add("ItemsPerPage", request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+            }
+
+            string query = queryBuilder.ToString();
+            var result = await _mysqlContext.GetPagedListAsync<ProductFaqVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
+            return result;
+        }
     }
 }
