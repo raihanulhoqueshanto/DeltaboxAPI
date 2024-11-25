@@ -40,6 +40,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<AdsBanner> AdsBanners { get; set; }
         public DbSet<AssociateBrand> AssociateBrands { get; set; }
         public DbSet<ProductFaq> ProductFaqs { get; set; }
+        public DbSet<ProductReview> ProductReviews { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {

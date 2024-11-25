@@ -46,7 +46,7 @@ namespace DeltaboxAPI.Controllers
                 PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
                 return Ok(result);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
@@ -108,6 +108,21 @@ namespace DeltaboxAPI.Controllers
                 var result = await _mediator.Send(new GetProductFaq(id, productId, keyword, isActive, getAll, currentPage, itemsPerPage));
 
                 PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<IActionResult> CreateOrUpdateProductReview(ProductReview command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new CreateOrUpdateProductFaq(command));
                 return Ok(result);
             }
             catch (Exception ex)
