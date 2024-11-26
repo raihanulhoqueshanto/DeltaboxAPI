@@ -405,5 +405,111 @@ namespace DeltaboxAPI.Infrastructure.Services
             var result = await _mysqlContext.GetPagedListAsync<ProductFaqVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
             return result;
         }
+
+        public async Task<Result> CreateOrUpdateProductReview(ProductReview request)
+        {
+            try
+            {
+                var role = _currentUserService.RoleId;
+
+                // Validate review content
+                if (string.IsNullOrWhiteSpace(request.Review))
+                {
+                    return Result.Failure("Failed", "500", new[] { "Review is required!" }, null);
+                }
+
+                // Validate rating
+                if (request.Rating < 0 || request.Rating > 5)
+                {
+                    return Result.Failure("Failed", "500", new[] { "Rating must be between 0 and 5!" }, null);
+                }
+
+                // Validate customer name and email
+                if (string.IsNullOrWhiteSpace(request.CustomerName))
+                {
+                    return Result.Failure("Failed", "500", new[] { "Customer name is required!" }, null);
+                }
+
+                if (string.IsNullOrWhiteSpace(request.CustomerEmail))
+                {
+                    return Result.Failure("Failed", "500", new[] { "Customer email is required!" }, null);
+                }
+
+                // Normalize review for comparison (if needed)
+                var normalizedReview = request.Review.Replace(" ", "").ToLower();
+
+                if (request.Id > 0)
+                {
+                    // Update scenario
+                    if (role != "Admin")
+                    {
+                        return Result.Failure("Failed", "403", new[] { "Only administrators can update product reviews." }, null);
+                    }
+
+                    var reviewObj = await _context.ProductReviews.FindAsync(request.Id);
+
+                    if (reviewObj == null)
+                    {
+                        return Result.Failure("Failed", "404", new[] { "Product review not found!" }, null);
+                    }
+
+                    // Check for duplicate review, excluding current review
+                    var existingReview = await _context.ProductReviews
+                        .FirstOrDefaultAsync(r => r.Review.Replace(" ", "").ToLower() == normalizedReview
+                                                && r.Id != request.Id
+                                                && r.ProductId == request.ProductId);
+
+                    if (existingReview != null)
+                    {
+                        return Result.Failure("Failed", "409", new[] { "Identical review already exists for this product!" }, null);
+                    }
+
+                    // Update existing review
+                    reviewObj.ProductId = request.ProductId;
+                    reviewObj.CustomerName = request.CustomerName;
+                    reviewObj.CustomerEmail = request.CustomerEmail;
+                    reviewObj.Review = request.Review;
+                    reviewObj.Rating = request.Rating;
+                    reviewObj.IsActive = request.IsActive;
+
+                    _context.ProductReviews.Update(reviewObj);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                         ? Result.Success("Success", "200", new[] { "Updated Successfully" }, null)
+                         : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+                }
+                else
+                {
+                    // Create scenario
+                    // Check for duplicate review
+                    var existingReview = await _context.ProductReviews
+                        .FirstOrDefaultAsync(r => r.Review.Replace(" ", "").ToLower() == normalizedReview
+                                                && r.ProductId == request.ProductId
+                                                && r.CustomerEmail == request.CustomerEmail);
+
+                    if (existingReview != null)
+                    {
+                        return Result.Failure("Failed", "409", new[] { "You have already submitted an identical review for this product!" }, null);
+                    }
+
+                    // Set default IsActive to "Y" for new reviews
+                    request.IsActive = "Y";
+                    await _context.ProductReviews.AddAsync(request);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                         ? Result.Success("Success", "200", new[] { "Review Saved Successfully" }, null)
+                         : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
+        }
     }
 }

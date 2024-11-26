@@ -122,7 +122,7 @@ namespace DeltaboxAPI.Controllers
         {
             try
             {
-                var result = await _mediator.Send(new CreateOrUpdateProductFaq(command));
+                var result = await _mediator.Send(new CreateOrUpdateProductReview(command));
                 return Ok(result);
             }
             catch (Exception ex)
