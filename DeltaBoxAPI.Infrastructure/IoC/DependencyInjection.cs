@@ -42,6 +42,7 @@ namespace DeltaboxAPI.Infrastructure.IoC
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IBannerService, BannerService>();
             services.AddScoped<IBrandService, BrandService>();
+            services.AddScoped<IEmailService, EmailService>();
 
             return services;
         }

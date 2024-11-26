@@ -45,5 +45,19 @@ namespace DeltaboxAPI.Controllers
             var result = await _mediator.Send(new ChangePasswordRequest(command));
             return Ok(result);
         }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordModel command)
+        {
+            var result = await _mediator.Send(new ForgotPasswordRequest(command));
+            return Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordModel command)
+        {
+            var result = await _mediator.Send(new ResetPasswordRequest(command));
+            return Ok(result);
+        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using DeltaboxAPI.Application.Common.Models.DTO;
+﻿using DeltaboxAPI.Application.Common.Interfaces;
+using DeltaboxAPI.Application.Common.Models.DTO;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth.Commands;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token;
@@ -24,13 +25,15 @@ namespace DeltaboxAPI.Infrastructure.Services
         private readonly UserManager<ApplicationUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly ITokenService _tokenService;
+        private readonly IEmailService _emailService;
 
-        public AuthService(ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ITokenService tokenService)
+        public AuthService(ApplicationDbContext context, UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ITokenService tokenService, IEmailService emailService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             this.userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             this.roleManager = roleManager ?? throw new ArgumentNullException(nameof(roleManager));
             _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+            _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         }
 
         public void Dispose()
@@ -207,6 +210,81 @@ namespace DeltaboxAPI.Infrastructure.Services
             }
 
             return Result.Success("Success", "200", new string[] { "Successfully Registered!" }, null);
+        }
+
+        public async Task<Result> ForgotPasswordRequest(ForgotPasswordModel request)
+        {
+            var user = await userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                return Result.Failure("Failed", "404", new[] { "User not found" }, null);
+            }
+
+            // Generate OTP
+            var otp = GenerateOTP();
+
+            // Remove any existing OTPs for this email
+            var existingOTPs = _context.PasswordResetOTPs
+                .Where(x => x.Email == request.Email && !x.IsUsed);
+            _context.PasswordResetOTPs.RemoveRange(existingOTPs);
+
+            // Create new OTP record
+            var otpEntity = new PasswordResetOTP
+            {
+                Email = request.Email,
+                OTP = otp,
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                IsUsed = false
+            };
+            _context.PasswordResetOTPs.Add(otpEntity);
+            await _context.SaveChangesAsync();
+
+            // Send OTP via email
+            await _emailService.SendPasswordResetOTPAsync(request.Email, otp);
+
+            return Result.Success("Success", "200", new[] { "OTP sent to email" }, null);
+        }
+
+        public async Task<Result> ResetPasswordRequest(ResetPasswordModel request)
+        {
+            var otpRecord = _context.PasswordResetOTPs
+                .FirstOrDefault(x =>
+                    x.Email == request.Email &&
+                    x.OTP == request.OTP &&
+                    x.ExpiresAt > DateTime.UtcNow &&
+                    !x.IsUsed);
+
+            if (otpRecord == null)
+            {
+                return Result.Failure("Failed", "400", new[] { "Invalid or expired OTP" }, null);
+            }
+
+            var user = await userManager.FindByEmailAsync(request.Email);
+            if (user == null)
+            {
+                return Result.Failure("Failed", "404", new[] { "User not found" }, null);
+            }
+
+            // Reset password
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await userManager.ResetPasswordAsync(user, token, request.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                return Result.Failure("Failed", "500", new[] { "Password reset failed" }, null);
+            }
+
+            // Mark OTP as used
+            otpRecord.IsUsed = true;
+            await _context.SaveChangesAsync();
+
+            return Result.Success("Success", "200", new[] { "Password reset successful" }, null);
+        }
+
+        private string GenerateOTP()
+        {
+            return new Random().Next(100000, 999999).ToString();
         }
     }
 }
