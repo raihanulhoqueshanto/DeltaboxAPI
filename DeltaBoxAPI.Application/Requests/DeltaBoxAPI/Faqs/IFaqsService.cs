@@ -20,5 +20,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs
         Task<Result> CreateOrUpdateProductFaq(ProductFaq request);
         Task<PagedList<ProductFaqVM>> GetProductFaq(GetProductFaq request);
         Task<Result> CreateOrUpdateProductReview(ProductReview request);
+        Task<PagedList<ProductReviewVM>> GetProductReview(GetProductReview request);
     }
 }
