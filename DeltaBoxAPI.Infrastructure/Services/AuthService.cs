@@ -9,6 +9,7 @@ using DeltaBoxAPI.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.NetworkInformation;
@@ -43,7 +44,16 @@ namespace DeltaboxAPI.Infrastructure.Services
 
         public async Task<Result> LoginRequest(LoginModel request)
         {
-            var user = await userManager.FindByNameAsync(request.Username);
+            var emailValidator = new EmailAddressAttribute();
+
+            bool isEmail = emailValidator.IsValid(request.UsernameOrEmail);
+
+            var user = isEmail 
+                ? await userManager.FindByEmailAsync(request.UsernameOrEmail) 
+                : await userManager.FindByNameAsync(request.UsernameOrEmail);
+
+            //var user = await userManager.FindByNameAsync(request.UsernameOrEmail);
+            //var user = await userManager.FindByEmailAsync(request.UsernameOrEmail);
 
             if (user != null && await userManager.CheckPasswordAsync(user, request.Password))
             {
