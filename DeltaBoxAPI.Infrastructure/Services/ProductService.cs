@@ -444,6 +444,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                     // Update ProductProfile
                     productProfile.Name = request.Name;
                     productProfile.CategoryId = request.CategoryId;
+                    productProfile.ShortDescription = request.ShortDescription;
                     productProfile.Description = request.Description;
                     productProfile.ThumbnailImage = request.ThumbnailImage;
                     productProfile.IsActive = request.IsActive;
@@ -457,6 +458,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                     {
                         Name = request.Name,
                         CategoryId = request.CategoryId,
+                        ShortDescription = request.ShortDescription,
                         Description = request.Description,
                         ThumbnailImage = request.ThumbnailImage,
                         IsActive = request.IsActive

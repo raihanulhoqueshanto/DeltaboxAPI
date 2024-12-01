@@ -22,6 +22,9 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Product
         [Column("category_id")]
         public int CategoryId { get; set; }
 
+        [Column("short_description")]
+        public string ShortDescription { get; set; }
+
         [Column("description")]
         public string Description { get; set; }
 

@@ -14,6 +14,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
         public string Name { get; set; }
         [Required]
         public int CategoryId { get; set; }
+        public string ShortDescription { get; set; }
         public string Description { get; set; }
         public string ThumbnailImage { get; set; }
         public string IsActive { get; set; }
