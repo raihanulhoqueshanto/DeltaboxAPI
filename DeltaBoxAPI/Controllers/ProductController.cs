@@ -70,7 +70,7 @@ namespace DeltaboxAPI.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetProduct(int? id, int? categoryId, string? name, string? isActive, string? getAll, int currentPage, int itemsPerPage)
         {
             try
