@@ -774,6 +774,7 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             queryBuilder.AppendLine("SELECT pp.id AS Id, ");
             queryBuilder.AppendLine("pp.name AS Name, ");
+            queryBuilder.AppendLine("LOWER(REPLACE(REPLACE(REPLACE(pp.name, ' ', '-'), '&', 'and'), ',', '')) AS Slug, ");
             queryBuilder.AppendLine("pp.thumbnail_image AS ThumbnailImage, ");
             queryBuilder.AppendLine("MIN(pv.price) AS Price, ");
             queryBuilder.AppendLine("CASE WHEN SUM(pv.stock_quantity) > 0 THEN 'In Stock' ELSE 'Out of Stock' END AS StockStatus, ");
