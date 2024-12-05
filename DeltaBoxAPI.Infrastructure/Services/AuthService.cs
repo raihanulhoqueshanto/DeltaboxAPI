@@ -103,6 +103,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                 {
                     Name = user.Name,
                     Username = user.UserName,
+                    Role = string.Join(", ", userRoles),
                     Token = token.TokenString,
                     RefreshToken = refreshToken,
                     Expiration = token.ValidTo
@@ -116,6 +117,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             {
                 Name = "",
                 Username = "",
+                Role = "",
                 Token = "",
                 RefreshToken = "",
                 Expiration = null
