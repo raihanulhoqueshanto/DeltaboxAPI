@@ -1024,5 +1024,81 @@ namespace DeltaboxAPI.Infrastructure.Services
             }
 
         }
+
+        public async Task<ProductDetailsVM> GetProductDetails(GetProductDetails request)
+        {
+            if (!request.Id.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request.Id), "Product ID must be provided");
+            }
+
+            var queryBuilder = new StringBuilder();
+            var parameter = new DynamicParameters();
+
+            // First, retrieve basic product details
+            queryBuilder.AppendLine(@"
+    SELECT 
+        pp.id AS Id, 
+        pp.name AS Name, 
+        pp.short_description AS ShortDescription, 
+        pp.description AS Description, 
+        pp.thumbnail_image AS ThumbnailImage, 
+        COALESCE(AVG(pr.rating), 0) AS Rating, 
+        COUNT(DISTINCT pr.id) AS ReviewCount
+    FROM 
+        product_profile pp
+    LEFT JOIN 
+        product_review pr 
+    ON 
+        pp.id = pr.product_id AND pr.is_active = 'Y'
+    WHERE 
+        pp.id = @ProductId AND pp.is_active = 'Y'
+    GROUP BY 
+        pp.id, pp.name, pp.short_description, pp.description, pp.thumbnail_image");
+
+            parameter.Add("ProductId", request.Id.Value, DbType.Int32);
+
+            // Execute the first query to get basic product details
+            var productDetails = await _mysqlContext.GetFirstOrDefaultAsync<ProductDetailsVM>(queryBuilder.ToString(), parameter);
+
+            if (productDetails == null)
+            {
+                throw new KeyNotFoundException($"Product with ID {request.Id.Value} not found");
+            }
+
+            // Retrieve unique product images only.
+            var images = await _context.ProductImages
+                .Where(pi => pi.ProductId == request.Id.Value
+                && pi.IsActive == "Y"
+                && pi.Image != "/Images/Product/ProductImage/default.png") // Skip specific path
+                .Select(pi => pi.Image)
+                .Distinct() // Ensure uniqueness
+                .ToListAsync();
+
+            productDetails.Images = images;
+
+            // Retrieve product variants
+            var variants = await _context.ProductVariants
+                .Where(pv => pv.ProductId == request.Id.Value && pv.IsActive == "Y")
+                .Select(pv => new ProductDetailsVariant
+                {
+                    Id = pv.Id,
+                    Name = pv.Name,
+                    Sku = pv.SKU,
+                    StockStatus = pv.StockQuantity > 0 ? "In Stock" : "Out of Stock",
+                    Price = pv.Price,
+                    FinalPrice = pv.DiscountStartDate <= DateTime.Now && pv.DiscountEndDate >= DateTime.Now
+                        ? pv.Price - pv.DiscountAmount
+                        : pv.Price,
+                    DiscountAmount = pv.DiscountStartDate <= DateTime.Now && pv.DiscountEndDate >= DateTime.Now
+                        ? pv.DiscountAmount
+                        : 0
+                })
+                .ToListAsync();
+
+            productDetails.Variants = variants;
+
+            return productDetails;
+        }
     }
 }
