@@ -33,5 +33,20 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> RemoveFromWishlist(int id)
+        {
+            try
+            {
+                var result = await _mediator.Send(new RemoveFromWishlist(id));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using DeltaboxAPI.Application.Common.Interfaces;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Commands;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
 using DeltaBoxAPI.Application.Common.Models;
 using DeltaBoxAPI.Infrastructure.Data;
@@ -55,6 +56,37 @@ namespace DeltaboxAPI.Infrastructure.Services
                 return result > 0
                      ? Result.Success("Success", "200", new[] { "Added in wishlist." }, null)
                      : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
+        }
+
+        public async Task<Result> RemoveFromWishlist(RemoveFromWishlist request)
+        {
+            try
+            {
+                var customerId = _currentUserService.UserId;
+                var wishlistObj = await _context.Wishlists.FirstOrDefaultAsync(c => c.Id == request.Id && c.CustomerId == customerId && c.IsActive == "Y");
+                if (wishlistObj != null)
+                {
+                    wishlistObj.IsActive = "N";
+                }
+                else
+                {
+                    return Result.Failure("Failed", "404", new[] { "Not found in wishlist." }, null);
+                }
+
+                 _context.Wishlists.Update(wishlistObj);
+
+                int result = await _context.SaveChangesAsync();
+
+                return result > 0
+                     ? Result.Success("Success", "200", new[] { "Removed Successfully" }, null)
+                     : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+
             }
             catch (Exception ex)
             {

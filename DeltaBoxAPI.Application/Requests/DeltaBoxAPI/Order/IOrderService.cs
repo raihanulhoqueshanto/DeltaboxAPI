@@ -1,4 +1,5 @@
-﻿using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
+﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Commands;
+using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
 using DeltaBoxAPI.Application.Common.Models;
 using System;
 using System.Collections.Generic;
@@ -11,5 +12,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
     public interface IOrderService : IDisposable
     {
         Task<Result> AddInWishlist(Wishlist request);
+        Task<Result> RemoveFromWishlist(RemoveFromWishlist request);
     }
 }
