@@ -16,6 +16,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
         public string Description { get; set; }
         public string ThumbnailImage { get; set; }
         public string IsActive { get; set; }
+        public string LatestOffer { get; set; }
         public List<ColorwiseVariantVM> ColorGroups { get; set; }
     }
 
