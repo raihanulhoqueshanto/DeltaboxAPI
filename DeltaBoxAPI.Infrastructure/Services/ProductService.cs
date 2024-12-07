@@ -771,18 +771,28 @@ namespace DeltaboxAPI.Infrastructure.Services
             string conditionClause = "";
             var queryBuilder = new StringBuilder();
             var parameter = new DynamicParameters();
+            var currentDate = DateTime.Now;
 
             queryBuilder.AppendLine("SELECT pp.id AS Id, ");
             queryBuilder.AppendLine("pp.name AS Name, ");
             queryBuilder.AppendLine("LOWER(REPLACE(REPLACE(REPLACE(pp.name, ' ', '-'), '&', 'and'), ',', '')) AS Slug, ");
             queryBuilder.AppendLine("pp.thumbnail_image AS ThumbnailImage, ");
             queryBuilder.AppendLine("MIN(pv.price) AS Price, ");
+            queryBuilder.AppendLine("MIN(CASE WHEN @CurrentDate BETWEEN pv.discount_start_date AND pv.discount_end_date ");
+            queryBuilder.AppendLine("     THEN pv.price - pv.discount_amount ");
+            queryBuilder.AppendLine("     ELSE pv.price END) AS FinalPrice, ");
+            queryBuilder.AppendLine("MIN(CASE WHEN @CurrentDate BETWEEN pv.discount_start_date AND pv.discount_end_date ");
+            queryBuilder.AppendLine("     THEN pv.discount_amount ");
+            queryBuilder.AppendLine("     ELSE 0 END) AS DiscountAmount, ");
             queryBuilder.AppendLine("CASE WHEN SUM(pv.stock_quantity) > 0 THEN 'In Stock' ELSE 'Out of Stock' END AS StockStatus, ");
             queryBuilder.AppendLine("COUNT(*) OVER() AS TotalItems ");
             queryBuilder.AppendLine("FROM product_profile pp ");
             queryBuilder.AppendLine("LEFT JOIN product_variant pv ON pp.id = pv.product_id ");
             queryBuilder.AppendLine("LEFT JOIN product_category pc ON pp.category_id = pc.id ");
             queryBuilder.AppendLine("LEFT JOIN product_attribute pa ON pv.id = pa.variant_id ");
+
+            // Add current date parameter first
+            parameter.Add("CurrentDate", currentDate, DbType.DateTime);
 
             if (!string.IsNullOrEmpty(request.Keyword))
             {

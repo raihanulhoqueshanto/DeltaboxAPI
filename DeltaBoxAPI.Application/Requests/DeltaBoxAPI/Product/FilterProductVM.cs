@@ -12,6 +12,8 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
         public string Name { get; set; }
         public string Slug { get; set; }
         public decimal Price { get; set; }
+        public decimal FinalPrice { get; set; }
+        public decimal DiscountAmount { get; set; }
         public string StockStatus { get; set; }
         public string ThumbnailImage { get; set; }
     }
