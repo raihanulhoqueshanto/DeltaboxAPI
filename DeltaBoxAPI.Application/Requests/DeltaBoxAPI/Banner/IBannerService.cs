@@ -14,6 +14,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner
     {
         Task<Result> CreateOrUpdateBranner(AdsBanner request);
         Task<PagedList<AdsBannerVM>> GetBanner(GetBanner request);
-        Task<List<List<AdsBannerVM>>> GetBannerForClient(GetBannerForClient request);
+        Task<Dictionary<string, List<AdsBannerVM>>> GetBannerForClient(GetBannerForClient request);
     }
 }

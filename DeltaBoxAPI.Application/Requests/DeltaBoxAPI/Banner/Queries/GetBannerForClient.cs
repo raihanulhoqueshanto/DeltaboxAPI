@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner.Queries
 {
-    public class GetBannerForClient : IRequest<List<List<AdsBannerVM>>>
+    public class GetBannerForClient : IRequest<Dictionary<string, List<AdsBannerVM>>>
     {
         public string? Section { get; set; }
         public string? Type { get; set; }
@@ -19,7 +19,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner.Queries
         }
     }
 
-    public class GetBannerForClientHandler : IRequestHandler<GetBannerForClient, List<List<AdsBannerVM>>>
+    public class GetBannerForClientHandler : IRequestHandler<GetBannerForClient, Dictionary<string, List<AdsBannerVM>>>
     {
         private readonly IBannerService _bannerService;
 
@@ -28,7 +28,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner.Queries
             _bannerService = bannerService ?? throw new ArgumentNullException(nameof(bannerService));
         }
 
-        public async Task<List<List<AdsBannerVM>>> Handle(GetBannerForClient request, CancellationToken cancellationToken)
+        public async Task<Dictionary<string, List<AdsBannerVM>>> Handle(GetBannerForClient request, CancellationToken cancellationToken)
         {
             return await _bannerService.GetBannerForClient(request);
         }

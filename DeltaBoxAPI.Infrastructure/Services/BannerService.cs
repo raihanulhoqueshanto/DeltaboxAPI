@@ -181,7 +181,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             return result;
         }
 
-        public async Task<List<List<AdsBannerVM>>> GetBannerForClient(GetBannerForClient request)
+        public async Task<Dictionary<string, List<AdsBannerVM>>> GetBannerForClient(GetBannerForClient request)
         {
             string conditionClause = " WHERE ";
             var queryBuilder = new StringBuilder();
@@ -208,12 +208,13 @@ namespace DeltaboxAPI.Infrastructure.Services
             string query = queryBuilder.ToString();
             var banners = await _mysqlContext.GetListAsync<AdsBannerVM>(query, parameter);
 
-            // Group banners by type and convert to the desired format
+            // Group banners by type and convert to a dictionary
             var groupedBanners = banners
-                .GroupBy(b => b.Type)
-                .OrderBy(g => g.Key)
-                .Select(g => g.ToList())
-                .ToList();
+                .GroupBy(b => b.Type.ToLower().Replace(" ", "_"))
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.ToList()
+                );
 
             return groupedBanners;
         }
