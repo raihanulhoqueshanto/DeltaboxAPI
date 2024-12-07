@@ -775,23 +775,26 @@ namespace DeltaboxAPI.Infrastructure.Services
             var parameter = new DynamicParameters();
             var currentDate = DateTime.Now;
 
-            queryBuilder.AppendLine("SELECT pp.id AS Id, ");
-            queryBuilder.AppendLine("pp.name AS Name, ");
-            queryBuilder.AppendLine("LOWER(REPLACE(REPLACE(REPLACE(pp.name, ' ', '-'), '&', 'and'), ',', '')) AS Slug, ");
-            queryBuilder.AppendLine("pp.thumbnail_image AS ThumbnailImage, ");
-            queryBuilder.AppendLine("MIN(pv.price) AS Price, ");
-            queryBuilder.AppendLine("MIN(CASE WHEN @CurrentDate BETWEEN pv.discount_start_date AND pv.discount_end_date ");
-            queryBuilder.AppendLine("     THEN pv.price - pv.discount_amount ");
-            queryBuilder.AppendLine("     ELSE pv.price END) AS FinalPrice, ");
-            queryBuilder.AppendLine("MIN(CASE WHEN @CurrentDate BETWEEN pv.discount_start_date AND pv.discount_end_date ");
-            queryBuilder.AppendLine("     THEN pv.discount_amount ");
-            queryBuilder.AppendLine("     ELSE 0 END) AS DiscountAmount, ");
-            queryBuilder.AppendLine("CASE WHEN SUM(pv.stock_quantity) > 0 THEN 'In Stock' ELSE 'Out of Stock' END AS StockStatus, ");
-            queryBuilder.AppendLine("COUNT(*) OVER() AS TotalItems ");
-            queryBuilder.AppendLine("FROM product_profile pp ");
-            queryBuilder.AppendLine("LEFT JOIN product_variant pv ON pp.id = pv.product_id ");
-            queryBuilder.AppendLine("LEFT JOIN product_category pc ON pp.category_id = pc.id ");
-            queryBuilder.AppendLine("LEFT JOIN product_attribute pa ON pv.id = pa.variant_id ");
+            queryBuilder.AppendLine("WITH RankedVariants AS (");
+            queryBuilder.AppendLine("    SELECT ");
+            queryBuilder.AppendLine("        pp.id AS ProductId, ");
+            queryBuilder.AppendLine("        pp.name AS Name, ");
+            queryBuilder.AppendLine("        LOWER(REPLACE(REPLACE(REPLACE(pp.name, ' ', '-'), '&', 'and'), ',', '')) AS Slug, ");
+            queryBuilder.AppendLine("        pp.thumbnail_image AS ThumbnailImage, ");
+            queryBuilder.AppendLine("        pv.sku AS Sku, ");
+            queryBuilder.AppendLine("        pv.price AS Price, ");
+            queryBuilder.AppendLine("        CASE WHEN @CurrentDate BETWEEN pv.discount_start_date AND pv.discount_end_date ");
+            queryBuilder.AppendLine("             THEN pv.price - pv.discount_amount ");
+            queryBuilder.AppendLine("             ELSE pv.price END AS FinalPrice, ");
+            queryBuilder.AppendLine("        CASE WHEN @CurrentDate BETWEEN pv.discount_start_date AND pv.discount_end_date ");
+            queryBuilder.AppendLine("             THEN pv.discount_amount ");
+            queryBuilder.AppendLine("             ELSE 0 END AS DiscountAmount, ");
+            queryBuilder.AppendLine("        pv.stock_quantity AS StockQuantity, ");
+            queryBuilder.AppendLine("        ROW_NUMBER() OVER (PARTITION BY pp.id ORDER BY pv.price ASC) AS VariantRank ");
+            queryBuilder.AppendLine("    FROM product_profile pp ");
+            queryBuilder.AppendLine("    LEFT JOIN product_variant pv ON pp.id = pv.product_id ");
+            queryBuilder.AppendLine("    LEFT JOIN product_category pc ON pp.category_id = pc.id ");
+            queryBuilder.AppendLine("    LEFT JOIN product_attribute pa ON pv.id = pa.variant_id ");
 
             // Add current date parameter first
             parameter.Add("CurrentDate", currentDate, DbType.DateTime);
@@ -903,37 +906,68 @@ namespace DeltaboxAPI.Infrastructure.Services
                 conditionClause = "WHERE";
             }
 
-            queryBuilder.AppendLine("GROUP BY pp.id, pp.name, pp.thumbnail_image ");
+            queryBuilder.AppendLine("), FinalProductList AS (");
+            queryBuilder.AppendLine("    SELECT ");
+            queryBuilder.AppendLine("        ProductId AS Id, ");
+            queryBuilder.AppendLine("        MAX(Name) AS Name, ");
+            queryBuilder.AppendLine("        MAX(Slug) AS Slug, ");
+            queryBuilder.AppendLine("        MAX(ThumbnailImage) AS ThumbnailImage, ");
+            queryBuilder.AppendLine("        MAX(Sku) AS Sku, ");
+            queryBuilder.AppendLine("        MAX(Price) AS Price, ");
+            queryBuilder.AppendLine("        MAX(FinalPrice) AS FinalPrice, ");
+            queryBuilder.AppendLine("        MAX(DiscountAmount) AS DiscountAmount, ");
+            queryBuilder.AppendLine("        CASE WHEN SUM(StockQuantity) > 0 THEN 'In Stock' ELSE 'Out of Stock' END AS StockStatus, ");
+            queryBuilder.AppendLine("        COUNT(*) OVER() AS TotalItems ");
+            queryBuilder.AppendLine("    FROM RankedVariants ");
+            queryBuilder.AppendLine("    WHERE VariantRank = 1 ");
+            queryBuilder.AppendLine("    GROUP BY ProductId ");
 
+            // Sorting
             if (!string.IsNullOrEmpty(request.SortBy))
             {
                 switch (request.SortBy.ToUpper())
                 {
                     case "HTOL":
-                        queryBuilder.AppendLine("ORDER BY MIN(pv.price) DESC ");
+                        queryBuilder.AppendLine("    ORDER BY MAX(Price) DESC ");
                         break;
                     case "LTOH":
-                        queryBuilder.AppendLine("ORDER BY MIN(pv.price) ASC ");
+                        queryBuilder.AppendLine("    ORDER BY MAX(Price) ASC ");
                         break;
                     case "ATOZ":
-                        queryBuilder.AppendLine("ORDER BY pp.name ASC ");
+                        queryBuilder.AppendLine("    ORDER BY MAX(Name) ASC ");
                         break;
                     case "ZTOA":
-                        queryBuilder.AppendLine("ORDER BY pp.name DESC ");
+                        queryBuilder.AppendLine("    ORDER BY MAX(Name) DESC ");
                         break;
                     default:
-                        queryBuilder.AppendLine("ORDER BY pp.id ");
+                        queryBuilder.AppendLine("    ORDER BY ProductId ");
                         break;
                 }
             }
             else
             {
-                queryBuilder.AppendLine("ORDER BY pp.id ");
+                queryBuilder.AppendLine("    ORDER BY ProductId ");
             }
 
+            queryBuilder.AppendLine(")");
+
+            // Pagination
             if (string.IsNullOrEmpty(request.GetAll) || request.GetAll.ToUpper() != "Y")
             {
-                queryBuilder.AppendLine("LIMIT @Offset, @ItemsPerPage");
+                queryBuilder.AppendLine("SELECT * FROM (");
+                queryBuilder.AppendLine("    SELECT *, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS RowNum ");
+                queryBuilder.AppendLine("    FROM FinalProductList");
+                queryBuilder.AppendLine(") AS PagedResults ");
+                queryBuilder.AppendLine("WHERE RowNum BETWEEN @Offset + 1 AND @Offset + @ItemsPerPage ");
+            }
+            else
+            {
+                queryBuilder.AppendLine("SELECT * FROM FinalProductList");
+            }
+
+            // Pagination parameters
+            if (string.IsNullOrEmpty(request.GetAll) || request.GetAll.ToUpper() != "Y")
+            {
                 parameter.Add("Offset", (request.CurrentPage - 1) * request.ItemsPerPage, DbType.Int32);
                 parameter.Add("ItemsPerPage", request.ItemsPerPage, DbType.Int32);
             }
@@ -948,6 +982,188 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             return result;
         }
+
+        // Previous One
+        //public async Task<PagedList<FilterProductVM>> GetFilterProducts(GetFilterProducts request)
+        //{
+        //    string conditionClause = "";
+        //    var queryBuilder = new StringBuilder();
+        //    var parameter = new DynamicParameters();
+        //    var currentDate = DateTime.Now;
+
+        //    queryBuilder.AppendLine("SELECT pp.id AS Id, ");
+        //    queryBuilder.AppendLine("pp.name AS Name, ");
+        //    queryBuilder.AppendLine("LOWER(REPLACE(REPLACE(REPLACE(pp.name, ' ', '-'), '&', 'and'), ',', '')) AS Slug, ");
+        //    queryBuilder.AppendLine("pp.thumbnail_image AS ThumbnailImage, ");
+        //    queryBuilder.AppendLine("MIN(pv.price) AS Price, ");
+        //    queryBuilder.AppendLine("MIN(CASE WHEN @CurrentDate BETWEEN pv.discount_start_date AND pv.discount_end_date ");
+        //    queryBuilder.AppendLine("     THEN pv.price - pv.discount_amount ");
+        //    queryBuilder.AppendLine("     ELSE pv.price END) AS FinalPrice, ");
+        //    queryBuilder.AppendLine("MIN(CASE WHEN @CurrentDate BETWEEN pv.discount_start_date AND pv.discount_end_date ");
+        //    queryBuilder.AppendLine("     THEN pv.discount_amount ");
+        //    queryBuilder.AppendLine("     ELSE 0 END) AS DiscountAmount, ");
+        //    queryBuilder.AppendLine("CASE WHEN SUM(pv.stock_quantity) > 0 THEN 'In Stock' ELSE 'Out of Stock' END AS StockStatus, ");
+        //    queryBuilder.AppendLine("COUNT(*) OVER() AS TotalItems ");
+        //    queryBuilder.AppendLine("FROM product_profile pp ");
+        //    queryBuilder.AppendLine("LEFT JOIN product_variant pv ON pp.id = pv.product_id ");
+        //    queryBuilder.AppendLine("LEFT JOIN product_category pc ON pp.category_id = pc.id ");
+        //    queryBuilder.AppendLine("LEFT JOIN product_attribute pa ON pv.id = pa.variant_id ");
+
+        //    // Add current date parameter first
+        //    parameter.Add("CurrentDate", currentDate, DbType.DateTime);
+
+        //    if (!string.IsNullOrEmpty(request.Keyword))
+        //    {
+        //        queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} (pp.name LIKE @Keyword OR pp.description LIKE @Keyword OR pv.sku LIKE @Keyword OR pc.name LIKE @Keyword)");
+        //        conditionClause = "WHERE";
+        //        parameter.Add("Keyword", $"%{request.Keyword}%", DbType.String);
+        //    }
+
+        //    if (request.Id.HasValue)
+        //    {
+        //        queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pp.id = @Id");
+        //        conditionClause = "WHERE";
+        //        parameter.Add("Id", request.Id.Value, DbType.Int32);
+        //    }
+
+        //    if (!string.IsNullOrEmpty(request.CategoryId))
+        //    {
+        //        var categoryIds = request.CategoryId.Split(',')
+        //                                          .Select((v, i) => new { Value = v.Trim(), ParamName = $"@CategoryId{i}" })
+        //                                          .ToList();
+
+        //        var inClause = string.Join(", ", categoryIds.Select(c => c.ParamName));
+        //        queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pp.category_id IN ({inClause})");
+        //        conditionClause = "WHERE";
+
+        //        foreach (var categoryId in categoryIds)
+        //        {
+        //            parameter.Add(categoryId.ParamName, int.Parse(categoryId.Value), DbType.Int32);
+        //        }
+        //    }
+
+        //    if (!string.IsNullOrEmpty(request.LatestOffer))
+        //    {
+        //        queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pp.latest_offer = @LatestOffer");
+        //        conditionClause = " WHERE ";
+        //        parameter.Add("LatestOffer", request.LatestOffer, DbType.String, ParameterDirection.Input);
+        //    }
+
+        //    if (request.MinPrice.HasValue && request.MaxPrice.HasValue)
+        //    {
+        //        queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pv.price BETWEEN @MinPrice AND @MaxPrice");
+        //        conditionClause = "WHERE";
+        //        parameter.Add("MinPrice", request.MinPrice.Value, DbType.Decimal);
+        //        parameter.Add("MaxPrice", request.MaxPrice.Value, DbType.Decimal);
+        //    }
+
+        //    if (!string.IsNullOrEmpty(request.Stock))
+        //    {
+        //        if (request.Stock.ToLower() == "instock")
+        //        {
+        //            queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pv.stock_quantity > 0");
+        //            conditionClause = "WHERE";
+        //        }
+        //        else if (request.Stock.ToLower() == "outofstock")
+        //        {
+        //            queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pv.stock_quantity <= 0");
+        //            conditionClause = "WHERE";
+        //        }
+        //    }
+
+        //    // Handle both plan and duration values together
+        //    if (!string.IsNullOrEmpty(request.Plan) || !string.IsNullOrEmpty(request.Duration))
+        //    {
+        //        var attributeConditions = new List<string>();
+
+        //        // Handle plan values
+        //        if (!string.IsNullOrEmpty(request.Plan))
+        //        {
+        //            var planValues = request.Plan.Split(',')
+        //                                       .Select((v, i) => new {
+        //                                           Value = v.Replace(" ", "").ToLower(),
+        //                                           ParamName = $"@Plan{i}"
+        //                                       })
+        //                                       .ToList();
+
+        //            var planInClause = string.Join(", ", planValues.Select(p => p.ParamName));
+        //            attributeConditions.Add($"LOWER(REPLACE(pa.attribute_value, ' ', '')) IN ({planInClause})");
+
+        //            foreach (var planValue in planValues)
+        //            {
+        //                parameter.Add(planValue.ParamName, planValue.Value, DbType.String);
+        //            }
+        //        }
+
+        //        // Handle duration values
+        //        if (!string.IsNullOrEmpty(request.Duration))
+        //        {
+        //            var durationValues = request.Duration.Split(',')
+        //                                               .Select((v, i) => new {
+        //                                                   Value = v.Replace(" ", "").ToLower(),
+        //                                                   ParamName = $"@Duration{i}"
+        //                                               })
+        //                                               .ToList();
+
+        //            var durationInClause = string.Join(", ", durationValues.Select(d => d.ParamName));
+        //            attributeConditions.Add($"LOWER(REPLACE(pa.attribute_value, ' ', '')) IN ({durationInClause})");
+
+        //            foreach (var durationValue in durationValues)
+        //            {
+        //                parameter.Add(durationValue.ParamName, durationValue.Value, DbType.String);
+        //            }
+        //        }
+
+        //        // Combine conditions with OR
+        //        queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} ({string.Join(" OR ", attributeConditions)})");
+        //        conditionClause = "WHERE";
+        //    }
+
+        //    queryBuilder.AppendLine("GROUP BY pp.id, pp.name, pp.thumbnail_image ");
+
+        //    if (!string.IsNullOrEmpty(request.SortBy))
+        //    {
+        //        switch (request.SortBy.ToUpper())
+        //        {
+        //            case "HTOL":
+        //                queryBuilder.AppendLine("ORDER BY MIN(pv.price) DESC ");
+        //                break;
+        //            case "LTOH":
+        //                queryBuilder.AppendLine("ORDER BY MIN(pv.price) ASC ");
+        //                break;
+        //            case "ATOZ":
+        //                queryBuilder.AppendLine("ORDER BY pp.name ASC ");
+        //                break;
+        //            case "ZTOA":
+        //                queryBuilder.AppendLine("ORDER BY pp.name DESC ");
+        //                break;
+        //            default:
+        //                queryBuilder.AppendLine("ORDER BY pp.id ");
+        //                break;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        queryBuilder.AppendLine("ORDER BY pp.id ");
+        //    }
+
+        //    if (string.IsNullOrEmpty(request.GetAll) || request.GetAll.ToUpper() != "Y")
+        //    {
+        //        queryBuilder.AppendLine("LIMIT @Offset, @ItemsPerPage");
+        //        parameter.Add("Offset", (request.CurrentPage - 1) * request.ItemsPerPage, DbType.Int32);
+        //        parameter.Add("ItemsPerPage", request.ItemsPerPage, DbType.Int32);
+        //    }
+
+        //    var query = queryBuilder.ToString();
+        //    var result = await _mysqlContext.GetPagedListAsync<FilterProductVM>(
+        //        request.CurrentPage,
+        //        request.ItemsPerPage,
+        //        query,
+        //        parameter
+        //    );
+
+        //    return result;
+        //}
 
         public async Task<FilterOptionVM> GetFilterOptions(GetFilterOptions request)
         {
