@@ -1,5 +1,6 @@
 ﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Commands;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Queries;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -41,6 +42,21 @@ namespace DeltaboxAPI.Controllers
             try
             {
                 var result = await _mediator.Send(new RemoveFromWishlist(id));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetWishlist()
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetWishlist());
                 return Ok(result);
             }
             catch (Exception ex)

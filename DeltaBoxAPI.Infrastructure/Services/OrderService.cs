@@ -94,5 +94,36 @@ namespace DeltaboxAPI.Infrastructure.Services
                 return Result.Failure("Failed", "500", new[] { errorMessage }, null);
             }
         }
+
+        public async Task<List<WishlistVM>> GetWishlist()
+        {
+            var customerId = _currentUserService.UserId;
+            var currentDate = DateTime.Now;
+
+            var wishlistQuery = await (from w in _context.Wishlists
+                                       join pp in _context.ProductProfiles on w.ProductId equals pp.Id
+                                       join pv in _context.ProductVariants on w.Sku equals pv.SKU
+                                       where w.CustomerId == customerId
+                                             && w.IsActive == "Y"
+                                             && pp.IsActive == "Y"
+                                             && pv.IsActive == "Y"
+                                       select new WishlistVM
+                                       {
+                                           Id = w.Id,
+                                           ProductId = pp.Id,
+                                           ProductName = pp.Name,
+                                           VariantId = pv.Id,
+                                           VariantName = pv.Name,
+                                           Price = pv.Price.ToString("F2"),
+                                           FinalPrice = (pv.Price -
+                                               (currentDate >= pv.DiscountStartDate && currentDate <= pv.DiscountEndDate
+                                                   ? pv.DiscountAmount
+                                                   : 0m)).ToString("F2"),
+                                           StockStatus = pv.StockQuantity > 0 ? "In Stock" : "Out of Stock",
+                                           ThumbnailImage = pp.ThumbnailImage
+                                       }).ToListAsync();
+
+            return wishlistQuery;
+        }
     }
 }

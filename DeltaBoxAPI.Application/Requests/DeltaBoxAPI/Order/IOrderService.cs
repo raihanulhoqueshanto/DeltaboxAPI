@@ -13,5 +13,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
     {
         Task<Result> AddInWishlist(Wishlist request);
         Task<Result> RemoveFromWishlist(RemoveFromWishlist request);
+        Task<List<WishlistVM>> GetWishlist();
     }
 }
