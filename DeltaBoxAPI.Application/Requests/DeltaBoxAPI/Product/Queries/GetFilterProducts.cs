@@ -13,6 +13,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product.Queries
         public string? Keyword { get; set; }
         public int? Id { get; set; }
         public string? CategoryId { get; set; }
+        public string? LatestOffer { get; set; }
         public string? Stock { get; set; }
         public decimal? MinPrice { get; set; }
         public decimal? MaxPrice { get; set; }
@@ -21,11 +22,12 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product.Queries
         public string? SortBy { get; set; }
         public string? GetAll { get; set; }
 
-        public GetFilterProducts(string? keyword, int? id, string? categoryId, string? stock, decimal? minPrice, decimal? maxPrice, string? plan, string? duration, string? sortBy, string? getAll, int currentPage, int itemsPerPage) : base(currentPage, itemsPerPage)
+        public GetFilterProducts(string? keyword, int? id, string? categoryId, string? latestOffer, string? stock, decimal? minPrice, decimal? maxPrice, string? plan, string? duration, string? sortBy, string? getAll, int currentPage, int itemsPerPage) : base(currentPage, itemsPerPage)
         {
             Keyword = keyword;
             Id = id;
             CategoryId = categoryId;
+            LatestOffer = latestOffer;
             Stock = stock;
             MinPrice = minPrice;
             MaxPrice = maxPrice;

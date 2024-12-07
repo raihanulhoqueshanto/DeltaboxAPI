@@ -826,6 +826,13 @@ namespace DeltaboxAPI.Infrastructure.Services
                 }
             }
 
+            if (!string.IsNullOrEmpty(request.LatestOffer))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pp.latest_offer = @LatestOffer");
+                conditionClause = " WHERE ";
+                parameter.Add("LatestOffer", request.LatestOffer, DbType.String, ParameterDirection.Input);
+            }
+
             if (request.MinPrice.HasValue && request.MaxPrice.HasValue)
             {
                 queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pv.price BETWEEN @MinPrice AND @MaxPrice");
