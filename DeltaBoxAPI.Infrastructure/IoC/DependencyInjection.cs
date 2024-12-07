@@ -3,6 +3,7 @@ using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Brand;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Payment;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Token;
@@ -43,6 +44,7 @@ namespace DeltaboxAPI.Infrastructure.IoC
             services.AddScoped<IBannerService, BannerService>();
             services.AddScoped<IBrandService, BrandService>();
             services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IOrderService, OrderService>();
 
             return services;
         }
