@@ -448,6 +448,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                     productProfile.Description = request.Description;
                     productProfile.ThumbnailImage = request.ThumbnailImage;
                     productProfile.IsActive = request.IsActive;
+                    productProfile.LatestOffer = request.LatestOffer;
 
                     _context.ProductProfiles.Update(productProfile);
                 }
@@ -461,7 +462,8 @@ namespace DeltaboxAPI.Infrastructure.Services
                         ShortDescription = request.ShortDescription,
                         Description = request.Description,
                         ThumbnailImage = request.ThumbnailImage,
-                        IsActive = request.IsActive
+                        IsActive = request.IsActive,
+                        LatestOffer = request.LatestOffer
                     };
 
                     await _context.ProductProfiles.AddAsync(productProfile);

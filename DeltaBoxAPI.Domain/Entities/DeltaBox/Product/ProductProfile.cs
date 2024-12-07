@@ -33,5 +33,8 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Product
 
         [Column("is_active")]
         public string IsActive { get; set; }
+
+        [Column("latest_offer")]
+        public string LatestOffer { get; set; }
     }
 }
