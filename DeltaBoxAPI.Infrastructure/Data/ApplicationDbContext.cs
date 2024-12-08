@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Banner;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Brand;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
+using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
 
 namespace DeltaBoxAPI.Infrastructure.Data
 {
@@ -45,6 +46,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<PasswordResetOTP> PasswordResetOTPs { get; set; }
         public DbSet<Wishlist> Wishlists { get; set; }
         public DbSet<Cart> Carts { get; set; }
+        public DbSet<PromotionCode> PromotionCodes { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {
