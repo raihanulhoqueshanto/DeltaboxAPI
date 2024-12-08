@@ -44,6 +44,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<ProductReview> ProductReviews { get; set; }
         public DbSet<PasswordResetOTP> PasswordResetOTPs { get; set; }
         public DbSet<Wishlist> Wishlists { get; set; }
+        public DbSet<Cart> Carts { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {

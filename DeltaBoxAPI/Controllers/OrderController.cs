@@ -64,5 +64,20 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> AddToCart(Cart command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new AddToCart(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

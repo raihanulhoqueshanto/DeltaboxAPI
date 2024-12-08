@@ -125,5 +125,34 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             return wishlistQuery;
         }
+
+        public async Task<Result> AddToCart(Cart request)
+        {
+            try
+            {
+                var customerId = _currentUserService.UserId;
+                var existingCart = await _context.Carts.FirstOrDefaultAsync(c => c.CustomerId == customerId && c.ProductId == request.ProductId && c.Sku.Replace(" ", "").ToLower() == request.Sku.Replace(" ", "").ToLower() && c.IsActive == "Y");
+
+                if (existingCart != null)
+                {
+                    return Result.Failure("Failed", "409", new[] { "Already added in cart." }, null);
+                }
+
+                request.CustomerId = customerId;
+                request.IsActive = "Y";
+                await _context.Carts.AddAsync(request);
+
+                int result = await _context.SaveChangesAsync();
+
+                return result > 0
+                     ? Result.Success("Success", "200", new[] { "Added to cart." }, null)
+                     : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
+        }
     }
 }
