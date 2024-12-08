@@ -15,5 +15,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         Task<Result> RemoveFromWishlist(RemoveFromWishlist request);
         Task<List<WishlistVM>> GetWishlist();
         Task<Result> AddToCart(Cart request);
+        Task<Result> RemoveFromCart(RemoveFromCart request);
+        Task<GetCartVM> GetCart();
     }
 }

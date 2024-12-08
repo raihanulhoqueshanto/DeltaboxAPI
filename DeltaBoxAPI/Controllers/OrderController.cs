@@ -79,5 +79,35 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> RemoveFromCart(int id)
+        {
+            try
+            {
+                var result = await _mediator.Send(new RemoveFromCart(id));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetCart()
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetCart());
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -114,11 +114,11 @@ namespace DeltaboxAPI.Infrastructure.Services
                                            ProductName = pp.Name,
                                            VariantId = pv.Id,
                                            VariantName = pv.Name,
-                                           Price = pv.Price.ToString("F2"),
+                                           Price = pv.Price,
                                            FinalPrice = (pv.Price -
                                                (currentDate >= pv.DiscountStartDate && currentDate <= pv.DiscountEndDate
                                                    ? pv.DiscountAmount
-                                                   : 0m)).ToString("F2"),
+                                                   : 0m)),
                                            StockStatus = pv.StockQuantity > 0 ? "In Stock" : "Out of Stock",
                                            ThumbnailImage = pp.ThumbnailImage
                                        }).ToListAsync();
@@ -153,6 +153,82 @@ namespace DeltaboxAPI.Infrastructure.Services
                 var errorMessage = ex.InnerException?.Message ?? ex.Message;
                 return Result.Failure("Failed", "500", new[] { errorMessage }, null);
             }
+        }
+
+        public async Task<Result> RemoveFromCart(RemoveFromCart request)
+        {
+            try
+            {
+                var customerId = _currentUserService.UserId;
+                var cartObj = await _context.Carts.FirstOrDefaultAsync(c => c.Id == request.Id && c.CustomerId == customerId && c.IsActive == "Y");
+                if (cartObj != null)
+                {
+                    cartObj.IsActive = "N";
+                }
+                else
+                {
+                    return Result.Failure("Failed", "404", new[] { "Not found in cart." }, null);
+                }
+
+                _context.Carts.Update(cartObj);
+
+                int result = await _context.SaveChangesAsync();
+
+                return result > 0
+                     ? Result.Success("Success", "200", new[] { "Removed Successfully" }, null)
+                     : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
+        }
+
+        public async Task<GetCartVM> GetCart()
+        {
+            var customerId = _currentUserService.UserId;
+            var currentDate = DateTime.Now;
+
+            var cartQuery = await(from c in _context.Carts
+                                      join pp in _context.ProductProfiles on c.ProductId equals pp.Id
+                                      join pv in _context.ProductVariants on c.Sku equals pv.SKU
+                                      where c.CustomerId == customerId
+                                            && c.IsActive == "Y"
+                                            && pp.IsActive == "Y"
+                                            && pv.IsActive == "Y"
+                                      select new CartVM
+                                      {
+                                          Id = c.Id,
+                                          ProductId = pp.Id,
+                                          ProductName = pp.Name,
+                                          VariantId = pv.Id,
+                                          VariantName = pv.Name,
+                                          Quantity = c.Quantity,
+                                          Price = pv.Price * c.Quantity,
+                                          FinalPrice = (pv.Price -
+                                              (currentDate >= pv.DiscountStartDate && currentDate <= pv.DiscountEndDate
+                                                  ? pv.DiscountAmount
+                                                  : 0m)) * c.Quantity,
+                                          StockStatus = pv.StockQuantity > 0 ? "In Stock" : "Out of Stock",
+                                          ThumbnailImage = pp.ThumbnailImage
+                                      }).ToListAsync();
+
+            // Ensure cartQuery is not null or empty
+            var carts = cartQuery ?? new List<CartVM>();
+
+            // Calculate subtotal safely, ensuring FinalPrice is valid
+            decimal subTotal = carts.Sum(cart => cart.FinalPrice);
+
+            // Create GetCartVM object
+            var getCartVM = new GetCartVM
+            {
+                SubTotal = subTotal,
+                Carts = carts
+            };
+
+            return getCartVM;
         }
     }
 }

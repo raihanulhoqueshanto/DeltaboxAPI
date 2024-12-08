@@ -6,13 +6,20 @@ using System.Threading.Tasks;
 
 namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
 {
-    public class WishlistVM
+    public class GetCartVM
+    {
+        public decimal SubTotal { get; set; }
+        public List<CartVM> Carts { get; set; }
+    }
+
+    public class CartVM
     {
         public int Id { get; set; }
         public int ProductId { get; set; }
         public string ProductName { get; set; }
         public int VariantId { get; set; }
         public string VariantName { get; set; }
+        public int Quantity { get; set; }
         public decimal Price { get; set; }
         public decimal FinalPrice { get; set; }
         public string StockStatus { get; set; }
