@@ -230,5 +230,48 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             return getCartVM;
         }
+
+        public async Task<Result> UpdateCartQuantity(UpdateCartQuantityRequest request)
+        {
+            try
+            {
+                var customerId = _currentUserService.UserId;
+                var cartObj = await _context.Carts.FirstOrDefaultAsync(c => c.Id == request.Id && c.CustomerId == customerId && c.IsActive == "Y");
+
+                if (cartObj != null)
+                {
+                    var productObj = await _context.ProductVariants.FirstOrDefaultAsync(c => c.ProductId == cartObj.ProductId && c.SKU == cartObj.Sku && c.IsActive == "Y");
+
+                    if (productObj != null)
+                    {
+                        if(request.Quantity <= productObj.StockQuantity)
+                        {
+                            cartObj.Quantity = request.Quantity;
+                        }
+                        else
+                        {
+                            return Result.Failure("Failed", "500", new[] { "Cart quantity cannot be greater than stock quantity." }, null);
+                        }
+                    }
+
+                    _context.Carts.Update(cartObj);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                         ? Result.Success("Success", "200", new[] { "Cart quantity updated successfully." }, null)
+                         : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+                }
+                else
+                {
+                    return Result.Failure("Failed", "404", new[] { "Not found in cart." }, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
+        }
     }
 }

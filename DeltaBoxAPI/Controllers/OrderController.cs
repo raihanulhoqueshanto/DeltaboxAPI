@@ -95,6 +95,21 @@ namespace DeltaboxAPI.Controllers
             }
         }
 
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> UpdateCartQuantity(UpdateCartQuantityRequest command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new UpdateCartQuantity(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetCart()

@@ -17,5 +17,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         Task<Result> AddToCart(Cart request);
         Task<Result> RemoveFromCart(RemoveFromCart request);
         Task<GetCartVM> GetCart();
+        Task<Result> UpdateCartQuantity(UpdateCartQuantityRequest request);
     }
 }

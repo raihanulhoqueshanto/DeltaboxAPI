@@ -25,4 +25,10 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         public string StockStatus { get; set; }
         public string ThumbnailImage { get; set; }
     }
+
+    public class UpdateCartQuantityRequest
+    {
+        public int Id { get; set; }
+        public int Quantity { get; set; }
+    }
 }
