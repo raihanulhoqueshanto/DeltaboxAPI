@@ -15,5 +15,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs
         public string Review { get; set; }
         public decimal Rating { get; set; }
         public string IsActive { get; set; }
+        public DateTime CreatedDate { get; set; }
     }
 }
