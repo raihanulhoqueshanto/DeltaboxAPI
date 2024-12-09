@@ -13,6 +13,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         public string ProductName { get; set; }
         public int VariantId { get; set; }
         public string VariantName { get; set; }
+        public string Sku { get; set; }
         public decimal Price { get; set; }
         public decimal FinalPrice { get; set; }
         public string StockStatus { get; set; }

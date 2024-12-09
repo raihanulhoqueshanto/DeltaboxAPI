@@ -114,6 +114,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                                            ProductName = pp.Name,
                                            VariantId = pv.Id,
                                            VariantName = pv.Name,
+                                           Sku = pv.SKU,
                                            Price = pv.Price,
                                            FinalPrice = (pv.Price -
                                                (currentDate >= pv.DiscountStartDate && currentDate <= pv.DiscountEndDate
@@ -205,6 +206,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                                           ProductName = pp.Name,
                                           VariantId = pv.Id,
                                           VariantName = pv.Name,
+                                          Sku = pv.SKU,
                                           Quantity = c.Quantity,
                                           Price = pv.Price * c.Quantity,
                                           FinalPrice = (pv.Price -
