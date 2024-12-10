@@ -82,5 +82,22 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetCommonImage(int? id, string? name, string? isActive, string? getAll, int currentPage, int itemsPerPage)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetCommonImage(id, name, isActive, getAll, currentPage, itemsPerPage));
+
+                PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

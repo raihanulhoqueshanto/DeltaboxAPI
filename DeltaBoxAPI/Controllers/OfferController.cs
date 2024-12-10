@@ -1,4 +1,5 @@
-﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Commands;
+﻿using DeltaboxAPI.Application.Common.Pagings;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Commands;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Queries;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
 using MediatR;
@@ -42,6 +43,8 @@ namespace DeltaboxAPI.Controllers
             try
             {
                 var result = await _mediator.Send(new GetPromotionCode(id, name, code, isActive, getAll, currentPage, itemsPerPage));
+
+                PaginationHeader.Add(Response, result.CurrentPage, result.ItemsPerPage, result.TotalPages, result.TotalItems);
                 return Ok(result);
             }
             catch (Exception ex)

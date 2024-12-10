@@ -16,5 +16,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner
         Task<PagedList<AdsBannerVM>> GetBanner(GetBanner request);
         Task<Dictionary<string, List<AdsBannerVM>>> GetBannerForClient(GetBannerForClient request);
         Task<Result> CreateOrUpdateCommonImage(CommonImage request);
+        Task<PagedList<CommonImageVM>> GetCommonImage(GetCommonImage request);
     }
 }

@@ -301,5 +301,50 @@ namespace DeltaboxAPI.Infrastructure.Services
                 return Result.Failure("Failed", "500", new[] { errorMessage }, null);
             }
         }
+
+        public async Task<PagedList<CommonImageVM>> GetCommonImage(GetCommonImage request)
+        {
+            string conditionClause = " ";
+            var queryBuilder = new StringBuilder();
+            var parameter = new DynamicParameters();
+
+            queryBuilder.AppendLine("SELECT common_image.*, count(*) over() as TotalItems FROM common_image ");
+
+            if (request.Id != null)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} id = @Id");
+                conditionClause = " WHERE ";
+                parameter.Add("Id", request.Id, DbType.Int32, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.Name))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} name LIKE @Name");
+                conditionClause = " WHERE ";
+                parameter.Add("Name", $"%{request.Name}%", DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.IsActive))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} is_active = @IsActive");
+                conditionClause = " WHERE ";
+                parameter.Add("IsActive", request.IsActive, DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.GetAll) && request.GetAll.ToUpper() == "Y")
+            {
+                request.ItemsPerPage = 0;
+            }
+            else
+            {
+                queryBuilder.AppendLine("LIMIT @Offset, @ItemsPerPage");
+                parameter.Add("Offset", (request.CurrentPage - 1) * request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+                parameter.Add("ItemsPerPage", request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+            }
+
+            string query = queryBuilder.ToString();
+            var result = await _mysqlContext.GetPagedListAsync<CommonImageVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
+            return result;
+        }
     }
 }
