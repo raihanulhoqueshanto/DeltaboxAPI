@@ -1,4 +1,5 @@
 ﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Commands;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Queries;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,21 @@ namespace DeltaboxAPI.Controllers
             try
             {
                 var result = await _mediator.Send(new CreateOrUpdatePromotionCode(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPromotionCode(int? id, string? name, string? code, string? isActive, string? getAll, int currentPage, int itemsPerPage)
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetPromotionCode(id, name, code, isActive, getAll, currentPage, itemsPerPage));
                 return Ok(result);
             }
             catch (Exception ex)

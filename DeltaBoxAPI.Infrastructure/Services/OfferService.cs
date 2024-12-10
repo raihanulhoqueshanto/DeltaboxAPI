@@ -1,12 +1,17 @@
-﻿using DeltaboxAPI.Application.Common.Interfaces;
+﻿using Dapper;
+using DeltaboxAPI.Application.Common.Interfaces;
+using DeltaboxAPI.Application.Common.Pagings;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Queries;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
+using DeltaboxAPI.Infrastructure.Utils;
 using DeltaBoxAPI.Application.Common.Models;
 using DeltaBoxAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -119,6 +124,58 @@ namespace DeltaboxAPI.Infrastructure.Services
                 var errorMessage = ex.InnerException?.Message ?? ex.Message;
                 return Result.Failure("Failed", "500", new[] { errorMessage }, null);
             }
+        }
+
+        public async Task<PagedList<PromotionCodeVM>> GetPromotionCode(GetPromotionCode request)
+        {
+            string conditionClause = " ";
+            var queryBuilder = new StringBuilder();
+            var parameter = new DynamicParameters();
+
+            queryBuilder.AppendLine("SELECT promotion_code.*, count(*) over() as TotalItems FROM promotion_code ");
+
+            if (request.Id != null)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} id = @Id");
+                conditionClause = " WHERE ";
+                parameter.Add("Id", request.Id, DbType.Int32, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.Name))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} name LIKE @Name");
+                conditionClause = " WHERE ";
+                parameter.Add("Name", $"%{request.Name}%", DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.Code))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} code LIKE @Code");
+                conditionClause = " WHERE ";
+                parameter.Add("Code", $"%{request.Code}%", DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.IsActive))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} is_active = @IsActive");
+                conditionClause = " WHERE ";
+                parameter.Add("IsActive", request.IsActive, DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.GetAll) && request.GetAll.ToUpper() == "Y")
+            {
+                request.ItemsPerPage = 0;
+            }
+            else
+            {
+                queryBuilder.AppendLine("LIMIT @Offset, @ItemsPerPage");
+                parameter.Add("Offset", (request.CurrentPage - 1) * request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+                parameter.Add("ItemsPerPage", request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+            }
+
+            string query = queryBuilder.ToString();
+            var result = await _mysqlContext.GetPagedListAsync<PromotionCodeVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
+            return result;
         }
     }
 }
