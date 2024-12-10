@@ -67,5 +67,20 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateOrUpdateCommonImage(CommonImage command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new CreateOrUpdateCommonImage(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

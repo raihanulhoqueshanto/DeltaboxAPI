@@ -47,6 +47,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<Wishlist> Wishlists { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<PromotionCode> PromotionCodes { get; set; }
+        public DbSet<CommonImage> CommonImages { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {

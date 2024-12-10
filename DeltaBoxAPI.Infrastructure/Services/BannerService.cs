@@ -218,5 +218,88 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             return groupedBanners;
         }
+
+        public async Task<Result> CreateOrUpdateCommonImage(CommonImage request)
+        {
+            try
+            {
+                // Validate required fields
+                if (string.IsNullOrWhiteSpace(request.Name))
+                {
+                    return Result.Failure("Failed", "500", new[] { "Name is required!" }, null);
+                }
+
+                var normalizedName = request.Name.Replace(" ", "").ToLower();
+
+                // Handle image upload if new image is provided
+                if (!string.IsNullOrEmpty(request.Image) && !ImageDirectory.IsFileExists(_hostEnvironment, request.Image))
+                {
+                    var img = await Helper.SaveSingleImage(request.Image, PathConstant.COMMON_IMAGE_PATH, _hostEnvironment);
+                    if (!img.Succeed)
+                    {
+                        return Result.Failure("Failed", "500", new[] { "Common image not saved. Please try again!" }, null);
+                    }
+                    request.Image = img.Status;
+                }
+
+                // Update existing common image
+                if (request.Id > 0)
+                {
+                    var existingCommonImage = await _context.CommonImages.FindAsync(request.Id);
+
+                    if (existingCommonImage == null)
+                    {
+                        return Result.Failure("Failed", "404", new[] { "Common image not found!" }, null);
+                    }
+
+                    // Check for duplicate name excluding current common image
+                    var duplicateCommonImage = await _context.CommonImages
+                        .FirstOrDefaultAsync(b => b.Name.Replace(" ", "").ToLower() == normalizedName && b.Id != request.Id);
+
+                    if (duplicateCommonImage != null)
+                    {
+                        return Result.Failure("Failed", "409", new[] { "Name already exists!" }, null);
+                    }
+
+                    // Update common image properties
+                    existingCommonImage.Name = request.Name;
+                    existingCommonImage.Image = request.Image;
+                    existingCommonImage.IsActive = request.IsActive;
+
+                    _context.CommonImages.Update(existingCommonImage);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                        ? Result.Success("Success", "200", new[] { "Updated Successfully" }, null)
+                        : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+                }
+                // Create new common image
+                else
+                {
+                    // Check for duplicate name
+                    var duplicateCommonImage = await _context.CommonImages
+                        .FirstOrDefaultAsync(b => b.Name.Replace(" ", "").ToLower() == normalizedName);
+
+                    if (duplicateCommonImage != null)
+                    {
+                        return Result.Failure("Failed", "409", new[] { "Duplicate data found. Name already exists." }, null);
+                    }
+
+                    await _context.CommonImages.AddAsync(request);
+
+                    int result = await _context.SaveChangesAsync();
+
+                    return result > 0
+                        ? Result.Success("Success", "200", new[] { "Saved Successfully" }, null)
+                        : Result.Failure("Failed", "500", new[] { "Operation failed. Please try again!" }, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
+        }
     }
 }

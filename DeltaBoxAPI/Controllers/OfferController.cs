@@ -36,7 +36,7 @@ namespace DeltaboxAPI.Controllers
         }
 
         [HttpGet]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetPromotionCode(int? id, string? name, string? code, string? isActive, string? getAll, int currentPage, int itemsPerPage)
         {
             try
