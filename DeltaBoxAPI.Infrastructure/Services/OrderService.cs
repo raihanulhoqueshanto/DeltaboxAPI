@@ -1,6 +1,7 @@
 ﻿using DeltaboxAPI.Application.Common.Interfaces;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Commands;
+using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
 using DeltaBoxAPI.Application.Common.Models;
 using DeltaBoxAPI.Infrastructure.Data;
@@ -274,6 +275,253 @@ namespace DeltaboxAPI.Infrastructure.Services
                 var errorMessage = ex.InnerException?.Message ?? ex.Message;
                 return Result.Failure("Failed", "500", new[] { errorMessage }, null);
             }
+        }
+
+        public async Task<Result> CreateOrder(CreateOrderRequest request)
+        {
+            try
+            {
+                // Start a database transaction to ensure data consistency
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                // Get current user ID
+                var customerId = _currentUserService.UserId;
+
+                // Generate invoice number
+                var invoiceNo = await GenerateInvoiceNumber();
+
+                // Calculate promotion code amount
+                decimal promotionCodeAmount = await CalculatePromotionCodeAmount(request.PromotionCode);
+
+                // Create order profile
+                var orderProfile = await CreateOrderProfile(
+                    customerId,
+                    invoiceNo,
+                    request,
+                    promotionCodeAmount
+                );
+
+                // Process order details
+                await CreateOrderDetails(orderProfile, request);
+
+                // Update reward points
+                await ProcessRewardPoints(customerId, orderProfile.Total);
+
+                // Update product variant stocks
+                await UpdateProductVariantStocks(request);
+
+                // Commit transaction
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Result.Success("Success", "200", new[] { "Order created successfully" }, orderProfile.Id);
+            }
+            catch (Exception ex)
+            {
+                // Rollback transaction in case of any error
+                await _context.Database.RollbackTransactionAsync();
+
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+            }
+        }
+
+        private async Task<string> GenerateInvoiceNumber()
+        {
+            // Generate invoice number like DIT202412120001
+            var today = DateTime.Now.ToString("yyyyMMdd");
+            var lastInvoice = await _context.OrderProfiles
+                .Where(o => o.InvoiceNo.StartsWith($"DIT{today}"))
+                .OrderByDescending(o => o.InvoiceNo)
+                .FirstOrDefaultAsync();
+
+            string newInvoiceNo;
+            if (lastInvoice == null)
+            {
+                newInvoiceNo = $"DIT{today}0001";
+            }
+            else
+            {
+                var lastNumber = int.Parse(lastInvoice.InvoiceNo.Substring(11));
+                newInvoiceNo = $"DIT{today}{(lastNumber + 1):D4}";
+            }
+
+            return newInvoiceNo;
+        }
+
+        private async Task<decimal> CalculatePromotionCodeAmount(string promotionCode)
+        {
+            if (string.IsNullOrWhiteSpace(promotionCode)) return 0;
+
+            var now = DateTime.Now;
+            var promoCodeEntity = await _context.PromotionCodes
+                .FirstOrDefaultAsync(p =>
+                    p.Code == promotionCode &&
+                    p.IsActive == "1" &&
+                    p.PromotionStartDate <= now &&
+                    p.PromotionEndDate >= now
+                );
+
+            return promoCodeEntity?.Amount ?? 0;
+        }
+
+        private async Task<OrderProfile> CreateOrderProfile(
+            string customerId,
+            string invoiceNo,
+            CreateOrderRequest request,
+            decimal promotionCodeAmount)
+        {
+            // Check promotion code usage
+            int noOfUse = await _context.OrderProfiles
+                .CountAsync(o =>
+                    o.CustomerId == customerId.ToString() &&
+                    o.PromotionCode == request.PromotionCode
+                ) + 1;
+
+            var orderProfile = new OrderProfile
+            {
+                InvoiceNo = invoiceNo,
+                CustomerId = customerId.ToString(),
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                Country = request.Country,
+                Email = request.Email,
+                PhoneNumber = request.PhoneNumber,
+                PromotionCode = request.PromotionCode,
+                OrderNote = request.OrderNote,
+                OrderStatus = "Order Placed",
+                NoOfUse = noOfUse
+            };
+
+            await _context.OrderProfiles.AddAsync(orderProfile);
+            await _context.SaveChangesAsync(); // Save to get the generated ID
+
+            return orderProfile;
+        }
+
+        private async Task CreateOrderDetails(OrderProfile orderProfile, CreateOrderRequest request)
+        {
+            var orderDetails = new List<OrderDetail>();
+
+            foreach (var detail in request.Details)
+            {
+                // Fetch product and variant details
+                var product = await _context.ProductProfiles
+                    .FirstOrDefaultAsync(p => p.Id == detail.ProductId);
+
+                var variant = await _context.ProductVariants
+                    .FirstOrDefaultAsync(v =>
+                        v.Id == detail.ProductVariantId &&
+                        v.ProductId == detail.ProductId &&
+                        v.SKU == detail.Sku
+                    );
+
+                if (product == null || variant == null)
+                    throw new Exception("Invalid product or variant");
+
+                // Calculate prices with potential discounts
+                var now = DateTime.Now;
+                decimal unitPrice = variant.Price;
+                decimal discountAmount = variant.DiscountAmount > 0 &&
+                    variant.DiscountStartDate <= now &&
+                    variant.DiscountEndDate >= now
+                    ? variant.DiscountAmount
+                    : 0;
+                decimal finalPrice = unitPrice - discountAmount;
+
+                var itemInvoiceNo = await GenerateItemInvoiceNumber(orderProfile.InvoiceNo);
+
+                var orderDetail = new OrderDetail
+                {
+                    OrderProfileId = orderProfile.Id,
+                    ItemInvoiceNo = itemInvoiceNo,
+                    InvoiceNo = orderProfile.InvoiceNo,
+                    ProductId = product.Id,
+                    ProductName = product.Name,
+                    ProductVariantId = variant.Id,
+                    ProductVariantName = variant.Name,
+                    Sku = variant.SKU,
+                    UnitPrice = unitPrice,
+                    FinalPrice = finalPrice,
+                    Quantity = 1, // Assuming quantity is 1, modify if needed
+                    SubTotal = unitPrice,
+                    Total = finalPrice,
+                    OrderItemStatus = "Order Placed"
+                };
+
+                orderDetails.Add(orderDetail);
+            }
+
+            await _context.OrderDetails.AddRangeAsync(orderDetails);
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task<string> GenerateItemInvoiceNumber(string parentInvoiceNo)
+        {
+            // Generate item invoice number like ITM202412120001
+            var today = DateTime.Now.ToString("yyyyMMdd");
+            var lastItemInvoice = await _context.OrderDetails
+                .Where(od => od.ItemInvoiceNo.StartsWith($"ITM{today}"))
+                .OrderByDescending(od => od.ItemInvoiceNo)
+                .FirstOrDefaultAsync();
+
+            string newItemInvoiceNo;
+            if (lastItemInvoice == null)
+            {
+                newItemInvoiceNo = $"ITM{today}0001";
+            }
+            else
+            {
+                var lastNumber = int.Parse(lastItemInvoice.ItemInvoiceNo.Substring(11));
+                newItemInvoiceNo = $"ITM{today}{(lastNumber + 1):D4}";
+            }
+
+            return newItemInvoiceNo;
+        }
+
+        private async Task ProcessRewardPoints(string customerId, decimal total)
+        {
+            var rewardPoints = Math.Round(total / 10);
+
+            var existingReward = await _context.RewardPoints
+                .FirstOrDefaultAsync(r => r.CustomerId == customerId);
+
+            if (existingReward == null)
+            {
+                var newReward = new RewardPoint
+                {
+                    CustomerId = customerId,
+                    Point = rewardPoints,
+                    RedeemedPoint = 0
+                };
+                await _context.RewardPoints.AddAsync(newReward);
+            }
+            else
+            {
+                existingReward.Point += rewardPoints;
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task UpdateProductVariantStocks(CreateOrderRequest request)
+        {
+            foreach (var detail in request.Details)
+            {
+                var variant = await _context.ProductVariants
+                    .FirstOrDefaultAsync(v =>
+                        v.Id == detail.ProductVariantId &&
+                        v.ProductId == detail.ProductId
+                    );
+
+                if (variant != null)
+                {
+                    variant.StockQuantity -= 1; // Assuming quantity is 1, modify if needed
+                    _context.ProductVariants.Update(variant);
+                }
+            }
+
+            await _context.SaveChangesAsync();
         }
     }
 }

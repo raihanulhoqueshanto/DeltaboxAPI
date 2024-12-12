@@ -124,5 +124,20 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> CreateOrder(CreateOrderRequest command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new CreateOrder(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
