@@ -1275,6 +1275,7 @@ namespace DeltaboxAPI.Infrastructure.Services
     SELECT 
         pp.id AS Id, 
         pp.name AS Name, 
+        pp.category_id AS CategoryId,
         pp.short_description AS ShortDescription, 
         pp.description AS Description, 
         pp.thumbnail_image AS ThumbnailImage, 

@@ -10,6 +10,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Product
     {
         public int Id { get; set; }
         public string Name { get; set; }
+        public int CategoryId { get; set; }
         public decimal Rating { get; set; }
         public int ReviewCount { get; set; }
         public string ShortDescription { get; set; }
