@@ -23,10 +23,10 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Product
         public int CategoryId { get; set; }
 
         [Column("short_description")]
-        public string ShortDescription { get; set; }
+        public string? ShortDescription { get; set; }
 
         [Column("description")]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         [Column("thumbnail_image")]
         public string ThumbnailImage { get; set; }

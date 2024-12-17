@@ -44,13 +44,16 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Order
         public decimal? SubTotal { get; set; }
 
         [Column("total")]
-        public decimal Total { get; set; }
+        public decimal? Total { get; set; }
 
         [Column("coin_redeemed")]
         public decimal? CoinRedeemed { get; set; }
 
         [Column("promotion_code")]
         public string? PromotionCode { get; set; }
+
+        [Column("promotion_code_amount")]
+        public decimal? PromotionCodeAmount { get; set; }
 
         [Column("no_of_use")]
         public int? NoOfUse { get; set; }

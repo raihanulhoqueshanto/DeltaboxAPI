@@ -279,51 +279,63 @@ namespace DeltaboxAPI.Infrastructure.Services
 
         public async Task<Result> CreateOrder(CreateOrderRequest request)
         {
-            try
+            // Use the database's execution strategy
+            var strategy = _context.Database.CreateExecutionStrategy();
+
+            return await strategy.ExecuteAsync(async () =>
             {
-                // Start a database transaction to ensure data consistency
+                // Wrap the entire operation in a transaction
                 using var transaction = await _context.Database.BeginTransactionAsync();
 
-                // Get current user ID
-                var customerId = _currentUserService.UserId;
+                try
+                {
+                    // Get current user ID
+                    var customerId = _currentUserService.UserId;
 
-                // Generate invoice number
-                var invoiceNo = await GenerateInvoiceNumber();
+                    // Generate invoice number
+                    var invoiceNo = await GenerateInvoiceNumber();
 
-                // Calculate promotion code amount
-                decimal promotionCodeAmount = await CalculatePromotionCodeAmount(request.PromotionCode);
+                    // Calculate promotion code amount
+                    decimal promotionCodeAmount = 0;
+                    if (!string.IsNullOrEmpty(request.PromotionCode))
+                    {
+                        promotionCodeAmount = await CalculatePromotionCodeAmount(request.PromotionCode);
+                    }
 
-                // Create order profile
-                var orderProfile = await CreateOrderProfile(
-                    customerId,
-                    invoiceNo,
-                    request,
-                    promotionCodeAmount
-                );
+                    // Create order profile
+                    var orderProfile = await CreateOrderProfile(
+                        customerId,
+                        invoiceNo,
+                        request,
+                        promotionCodeAmount
+                    );
 
-                // Process order details
-                await CreateOrderDetails(orderProfile, request);
+                    // Process order details & retrieved redemeed point
+                    var redeemedPoint = await CreateOrderDetails(orderProfile, request, promotionCodeAmount);
 
-                // Update reward points
-                await ProcessRewardPoints(customerId, orderProfile.Total);
+                    // Update reward points
+                    await ProcessRewardPoints(customerId, orderProfile.Total, redeemedPoint);
 
-                // Update product variant stocks
-                await UpdateProductVariantStocks(request);
+                    // Update product variant stocks
+                    await UpdateProductVariantStocks(request);
 
-                // Commit transaction
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                    // Save all changes
+                    await _context.SaveChangesAsync();
 
-                return Result.Success("Success", "200", new[] { "Order created successfully" }, orderProfile.Id);
-            }
-            catch (Exception ex)
-            {
-                // Rollback transaction in case of any error
-                await _context.Database.RollbackTransactionAsync();
+                    // Commit transaction
+                    await transaction.CommitAsync();
 
-                var errorMessage = ex.InnerException?.Message ?? ex.Message;
-                return Result.Failure("Failed", "500", new[] { errorMessage }, null);
-            }
+                    return Result.Success("Success", "200", new[] { "Order created successfully" }, orderProfile.Id);
+                }
+                catch (Exception ex)
+                {
+                    // Rollback transaction
+                    await transaction.RollbackAsync();
+
+                    var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                    return Result.Failure("Failed", "500", new[] { errorMessage }, null);
+                }
+            });
         }
 
         private async Task<string> GenerateInvoiceNumber()
@@ -357,7 +369,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             var promoCodeEntity = await _context.PromotionCodes
                 .FirstOrDefaultAsync(p =>
                     p.Code == promotionCode &&
-                    p.IsActive == "1" &&
+                    p.IsActive == "Y" &&
                     p.PromotionStartDate <= now &&
                     p.PromotionEndDate >= now
                 );
@@ -372,11 +384,15 @@ namespace DeltaboxAPI.Infrastructure.Services
             decimal promotionCodeAmount)
         {
             // Check promotion code usage
-            int noOfUse = await _context.OrderProfiles
-                .CountAsync(o =>
+            int noOfUse = 0;
+            if (!string.IsNullOrEmpty(request.PromotionCode))
+            {
+                noOfUse = await _context.OrderProfiles
+                    .CountAsync(o =>
                     o.CustomerId == customerId.ToString() &&
                     o.PromotionCode == request.PromotionCode
-                ) + 1;
+                    ) + 1;
+            }       
 
             var orderProfile = new OrderProfile
             {
@@ -388,6 +404,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
                 PromotionCode = request.PromotionCode,
+                PromotionCodeAmount = promotionCodeAmount,
                 OrderNote = request.OrderNote,
                 OrderStatus = "Order Placed",
                 NoOfUse = noOfUse
@@ -399,9 +416,11 @@ namespace DeltaboxAPI.Infrastructure.Services
             return orderProfile;
         }
 
-        private async Task CreateOrderDetails(OrderProfile orderProfile, CreateOrderRequest request)
+        private async Task<decimal> CreateOrderDetails(OrderProfile orderProfile, CreateOrderRequest request, decimal? promotionCodeAmount)
         {
             var orderDetails = new List<OrderDetail>();
+            decimal? netAmount = 0;
+            decimal? subTotal = 0;
 
             foreach (var detail in request.Details)
             {
@@ -443,45 +462,102 @@ namespace DeltaboxAPI.Infrastructure.Services
                     Sku = variant.SKU,
                     UnitPrice = unitPrice,
                     FinalPrice = finalPrice,
-                    Quantity = 1, // Assuming quantity is 1, modify if needed
-                    SubTotal = unitPrice,
-                    Total = finalPrice,
+                    Quantity = detail.Quantity,
+                    SubTotal = unitPrice * detail.Quantity,
+                    Total = finalPrice * detail.Quantity,
                     OrderItemStatus = "Order Placed"
                 };
 
                 orderDetails.Add(orderDetail);
+
+                // Calculate net amount and subtotal
+                netAmount += orderDetail.SubTotal;
+                subTotal += orderDetail.Total;
             }
 
+            // Add order details to context
             await _context.OrderDetails.AddRangeAsync(orderDetails);
             await _context.SaveChangesAsync();
+
+            // Update OrderProfile with calculated amounts
+            var redeemedPoint = await UpdateOrderProfileAmounts(orderProfile, netAmount, subTotal, request, promotionCodeAmount);
+
+            return redeemedPoint;
+        }
+
+        private async Task<decimal> UpdateOrderProfileAmounts(
+            OrderProfile orderProfile,
+            decimal? netAmount,
+            decimal? subTotal,
+            CreateOrderRequest request,
+            decimal? promotionCodeAmount)
+        {
+            // Calculate coin redeemed (if any)
+            decimal coinRedeemed = 0;
+
+            var customerId = _currentUserService.UserId;
+            var rewardPointObj = await _context.RewardPoints.FirstOrDefaultAsync(c => c.CustomerId == customerId);
+            
+            if(rewardPointObj != null)
+            {
+                if(request.CoinRedeemed >  0)
+                {
+                    if(request.CoinRedeemed > (rewardPointObj.Point - rewardPointObj.RedeemedPoint))
+                    {
+                        coinRedeemed = (rewardPointObj.Point - rewardPointObj.RedeemedPoint) ?? 0;
+                    }
+                    else
+                    {
+                        coinRedeemed = request.CoinRedeemed ?? 0;
+                    }
+                }
+            }
+            else
+            {
+                coinRedeemed = 0;
+            }
+
+            // Calculate final total
+            decimal? total = subTotal - coinRedeemed - promotionCodeAmount;
+
+            if(total < 0)
+            {
+                total = 0;
+            }
+
+            // Update OrderProfile
+            orderProfile.NetAmount = netAmount;
+            orderProfile.SubTotal = subTotal;
+            orderProfile.CoinRedeemed = coinRedeemed;
+            orderProfile.Total = total;
+
+            // Update in context
+            _context.OrderProfiles.Update(orderProfile);
+            await _context.SaveChangesAsync();
+
+            return coinRedeemed;
         }
 
         private async Task<string> GenerateItemInvoiceNumber(string parentInvoiceNo)
         {
-            // Generate item invoice number like ITM202412120001
+            // Generate a truly unique item invoice number
             var today = DateTime.Now.ToString("yyyyMMdd");
-            var lastItemInvoice = await _context.OrderDetails
-                .Where(od => od.ItemInvoiceNo.StartsWith($"ITM{today}"))
-                .OrderByDescending(od => od.ItemInvoiceNo)
-                .FirstOrDefaultAsync();
+            var uniqueSuffix = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper();
+            var newItemInvoiceNo = $"ITM{today}{uniqueSuffix}";
 
-            string newItemInvoiceNo;
-            if (lastItemInvoice == null)
+            // Optional: Ensure uniqueness by checking against existing entries
+            while (await _context.OrderDetails.AnyAsync(od => od.ItemInvoiceNo == newItemInvoiceNo))
             {
-                newItemInvoiceNo = $"ITM{today}0001";
-            }
-            else
-            {
-                var lastNumber = int.Parse(lastItemInvoice.ItemInvoiceNo.Substring(11));
-                newItemInvoiceNo = $"ITM{today}{(lastNumber + 1):D4}";
+                uniqueSuffix = Guid.NewGuid().ToString("N").Substring(0, 6);
+                newItemInvoiceNo = $"ITM{today}{uniqueSuffix}";
             }
 
             return newItemInvoiceNo;
         }
 
-        private async Task ProcessRewardPoints(string customerId, decimal total)
+        private async Task ProcessRewardPoints(string customerId, decimal? total, decimal? redeemedPoint)
         {
-            var rewardPoints = Math.Round(total / 10);
+            var rewardPoints = Math.Round((total ?? 0) / 10);
 
             var existingReward = await _context.RewardPoints
                 .FirstOrDefaultAsync(r => r.CustomerId == customerId);
@@ -499,6 +575,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             else
             {
                 existingReward.Point += rewardPoints;
+                existingReward.RedeemedPoint += redeemedPoint;
             }
 
             await _context.SaveChangesAsync();
@@ -516,7 +593,7 @@ namespace DeltaboxAPI.Infrastructure.Services
 
                 if (variant != null)
                 {
-                    variant.StockQuantity -= 1; // Assuming quantity is 1, modify if needed
+                    variant.StockQuantity -= detail.Quantity; // Assuming quantity is 1, modify if needed
                     _context.ProductVariants.Update(variant);
                 }
             }

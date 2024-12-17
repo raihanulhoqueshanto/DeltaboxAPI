@@ -13,11 +13,11 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         public string Country { get; set; }
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
-        public string PromotionCode { get; set; }
-        public string OrderNote { get; set; }
+        public string? PromotionCode { get; set; }
+        public string? OrderNote { get; set; }
         public decimal SubTotal { get; set; }
         public decimal Total { get; set; }
-        public decimal CoinRedeemed { get; set; }
+        public decimal? CoinRedeemed { get; set; }
         public List<OrderDetailRequest> Details { get; set; }
     }
 
@@ -26,5 +26,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         public int ProductId { get; set; }
         public int ProductVariantId { get; set; }
         public string Sku { get; set; }
+        public int Quantity { get; set; }
     }
 }
