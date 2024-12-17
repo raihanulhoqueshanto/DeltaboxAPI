@@ -325,7 +325,17 @@ namespace DeltaboxAPI.Infrastructure.Services
                     // Commit transaction
                     await transaction.CommitAsync();
 
-                    return Result.Success("Success", "200", new[] { "Order created successfully" }, orderProfile.Id);
+                    OrderResponse orderResponse = new OrderResponse()
+                    {
+                        FullName = $"{orderProfile.FirstName} {orderProfile.LastName}".Trim(), // Ensures proper spacing
+                        Email = orderProfile.Email,
+                        Amount = orderProfile.Total,
+                        CustomerId = orderProfile.CustomerId,
+                        Id = orderProfile.Id,
+                        InvoiceNo = orderProfile.InvoiceNo
+                    };
+
+                    return Result.Success("Success", "200", new[] { "Order created successfully." }, orderResponse);
                 }
                 catch (Exception ex)
                 {
