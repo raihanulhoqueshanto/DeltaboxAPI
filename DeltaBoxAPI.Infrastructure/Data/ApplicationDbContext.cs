@@ -51,6 +51,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<OrderProfile> OrderProfiles { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<RewardPoint> RewardPoints { get; set; }
+        public DbSet<PaymentInformation> PaymentInformations { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {

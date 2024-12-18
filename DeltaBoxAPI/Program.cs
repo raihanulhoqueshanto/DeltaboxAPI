@@ -10,6 +10,8 @@ using DeltaboxAPI.Application.IoC;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Pomelo.EntityFrameworkCore.MySql;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Payment;
+using DeltaboxAPI.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,6 +50,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register custom services
 builder.Services.AddInfrastructure(Configuration);
+builder.Services.AddHttpClient<IPaymentService, PaymentService>();
 builder.Services.AddApplication();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

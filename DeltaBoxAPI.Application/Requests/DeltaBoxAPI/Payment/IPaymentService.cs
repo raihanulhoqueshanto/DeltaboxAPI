@@ -15,5 +15,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Payment
     {
         Task<Result> CreateOrUpdatePaymentProof(PaymentProof request);
         Task<PagedList<PaymentProofVM>> GetPaymentProof(GetPaymentProof request);
+        Task<UddoktaPaymentResponse> CreatePaymentCharge(UddoktaPaymentRequest request);
+        Task<bool> VerifyPayment(string invoiceId);
     }
 }

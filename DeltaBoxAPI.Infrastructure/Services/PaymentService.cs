@@ -9,12 +9,16 @@ using DeltaBoxAPI.Application.Common.Models;
 using DeltaBoxAPI.Infrastructure.Data;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace DeltaboxAPI.Infrastructure.Services
@@ -24,12 +28,16 @@ namespace DeltaboxAPI.Infrastructure.Services
         private readonly ApplicationDbContext _context;
         private readonly MysqlDbContext _mysqlContext;
         private readonly IHostEnvironment _hostEnvironment;
+        private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
 
-        public PaymentService(ApplicationDbContext context, MysqlDbContext mysqlContext, IHostEnvironment hostEnvironment)
+        public PaymentService(ApplicationDbContext context, MysqlDbContext mysqlContext, IHostEnvironment hostEnvironment, HttpClient httpClient, IConfiguration configuration)
         {
             _context = context;
             _mysqlContext = mysqlContext;
             _hostEnvironment = hostEnvironment;
+            _httpClient = httpClient;
+            _configuration = configuration;
         }
 
         public void Dispose()
@@ -158,6 +166,172 @@ namespace DeltaboxAPI.Infrastructure.Services
             string query = queryBuilder.ToString();
             var result = await _mysqlContext.GetPagedListAsync<PaymentProofVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
             return result;
+        }
+
+        public async Task<UddoktaPaymentResponse> CreatePaymentCharge(UddoktaPaymentRequest request)
+        {
+            try
+            {
+                var apiKey = _configuration["UddoktaPay:ApiKey"];
+                var apiUrl = _configuration["UddoktaPay:ApiUrl"];
+
+                // Clear existing headers and add the specific UddoktaPay header
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("accept", "application/json");
+                _httpClient.DefaultRequestHeaders.Add("RT-UDDOKTAPAY-API-KEY", apiKey);
+
+                var json = JsonSerializer.Serialize(request, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                // Send request to UddoktaPay
+                var response = await _httpClient.PostAsync(apiUrl, content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Payment initiation failed: {errorContent}");
+                }
+
+                // Parse successful response
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var paymentResponse = JsonSerializer.Deserialize<UddoktaPaymentResponse>(
+                    responseContent,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+
+                return paymentResponse;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+        //public async Task<bool> VerifyPayment(string invoiceId)
+        //{
+        //    try
+        //    {
+        //        var apiKey = _configuration["UddoktaPay:ApiKey"];
+        //        var verifyUrl = _configuration["UddoktaPay:VerifyUrl"];
+
+        //        _httpClient.DefaultRequestHeaders.Clear();
+        //        _httpClient.DefaultRequestHeaders.Add("accept", "application/json");
+        //        _httpClient.DefaultRequestHeaders.Add("RT-UDDOKTAPAY-API-KEY", apiKey);
+
+        //        var payload = new { invoice_id = invoiceId };
+        //        var jsonPayload = JsonSerializer.Serialize(payload);
+        //        var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+        //        var response = await _httpClient.PostAsync(verifyUrl, content);
+        //        var responseContent = await response.Content.ReadAsStringAsync();
+
+        //        if (!response.IsSuccessStatusCode)
+        //        {
+        //            return false;
+        //        }
+
+        //        // Use a more explicit parsing approach
+        //        var jsonElement = JsonSerializer.Deserialize<JsonElement>(responseContent);
+
+        //        // Check if 'status' exists and parse it
+        //        if (jsonElement.TryGetProperty("status", out JsonElement statusElement))
+        //        {
+        //            // Check the type of status and convert accordingly
+        //            switch (statusElement.ValueKind)
+        //            {
+        //                case JsonValueKind.String:
+        //                    var statusString = statusElement.GetString()?.ToLower();
+        //                    return statusString == "completed" || statusString == "1";
+
+        //                case JsonValueKind.Number:
+        //                    return statusElement.GetInt32() == 1;
+
+        //                default:
+        //                    return false;
+        //            }
+        //        }
+
+        //        return false;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return false;
+        //    }
+        //}
+
+        public async Task<bool> VerifyPayment(string invoiceId)
+        {
+            try
+            {
+                var apiKey = _configuration["UddoktaPay:ApiKey"];
+                var verifyUrl = _configuration["UddoktaPay:VerifyUrl"];
+
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("accept", "application/json");
+                _httpClient.DefaultRequestHeaders.Add("RT-UDDOKTAPAY-API-KEY", apiKey);
+
+                var payload = new { invoice_id = invoiceId };
+                var jsonPayload = JsonSerializer.Serialize(payload);
+                var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PostAsync(verifyUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return false;
+                }
+
+                // Parse the JSON response
+                var responseData = JsonSerializer.Deserialize<JsonElement>(responseContent);
+
+                // Extract required fields
+                var customerId = responseData.GetProperty("metadata").GetProperty("customer_id").GetString();
+                var invoiceNo = responseData.GetProperty("metadata").GetProperty("invoice_no").GetString();
+                var paymentInvoiceId = responseData.GetProperty("invoice_id").GetString();
+
+                // Check if the payment record already exists
+                var existingPayment = await _context.PaymentInformations.FirstOrDefaultAsync(p =>
+                    p.CustomerId == customerId &&
+                    p.InvoiceNo == invoiceNo &&
+                    p.InvoiceId == paymentInvoiceId);
+
+                if (existingPayment != null)
+                {
+                    // Payment already exists
+                    return true;
+                }
+
+                // Create new PaymentInformation entity
+                var paymentInfo = new PaymentInformation
+                {
+                    CustomerId = customerId,
+                    InvoiceNo = invoiceNo,
+                    InvoiceId = paymentInvoiceId,
+                    PaymentMethod = responseData.GetProperty("payment_method").GetString(),
+                    SenderNumber = responseData.GetProperty("sender_number").GetString(),
+                    TransactionId = responseData.GetProperty("transaction_id").GetString(),
+                    Date = DateTime.Parse(responseData.GetProperty("date").GetString()),
+                    Status = responseData.GetProperty("status").GetString(),
+                    Amount = responseData.GetProperty("amount").GetString(),
+                    Fee = responseData.GetProperty("fee").GetString(),
+                    ChargedAmount = responseData.GetProperty("charged_amount").GetString(),
+                };
+
+                // Insert into database
+                await _context.PaymentInformations.AddAsync(paymentInfo);
+                await _context.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Handle the exception (log or rethrow if needed)
+                return false;
+            }
         }
     }
 }

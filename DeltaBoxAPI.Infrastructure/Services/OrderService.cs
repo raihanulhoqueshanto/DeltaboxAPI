@@ -1,6 +1,7 @@
 ﻿using DeltaboxAPI.Application.Common.Interfaces;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Commands;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Payment;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
 using DeltaBoxAPI.Application.Common.Models;
@@ -21,13 +22,15 @@ namespace DeltaboxAPI.Infrastructure.Services
         private readonly MysqlDbContext _mysqlContext;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IPaymentService _paymentService;
 
-        public OrderService(ApplicationDbContext context, MysqlDbContext mysqlContext, IHostEnvironment hostEnvironment, ICurrentUserService currentUserService)
+        public OrderService(ApplicationDbContext context, MysqlDbContext mysqlContext, IHostEnvironment hostEnvironment, ICurrentUserService currentUserService, IPaymentService paymentService)
         {
             _context = context;
             _mysqlContext = mysqlContext;
             _hostEnvironment = hostEnvironment;
             _currentUserService = currentUserService;
+            _paymentService = paymentService;
         }
 
         public void Dispose()
@@ -325,17 +328,40 @@ namespace DeltaboxAPI.Infrastructure.Services
                     // Commit transaction
                     await transaction.CommitAsync();
 
-                    OrderResponse orderResponse = new OrderResponse()
+                    //OrderResponse orderResponse = new OrderResponse()
+                    //{
+                    //    FullName = $"{orderProfile.FirstName} {orderProfile.LastName}".Trim(), // Ensures proper spacing
+                    //    Email = orderProfile.Email,
+                    //    Amount = orderProfile.Total,
+                    //    CustomerId = orderProfile.CustomerId,
+                    //    Id = orderProfile.Id,
+                    //    InvoiceNo = orderProfile.InvoiceNo
+                    //};
+
+                    //return Result.Success("Success", "200", new[] { "Order created successfully." }, orderResponse);
+
+                    //Prepare UddoktaPaymentRequest and call CreatePaymentCharge
+                    var paymentRequest = new UddoktaPaymentRequest
                     {
-                        FullName = $"{orderProfile.FirstName} {orderProfile.LastName}".Trim(), // Ensures proper spacing
+                        FullName = $"{orderProfile.FirstName} {orderProfile.LastName}".Trim(),
                         Email = orderProfile.Email,
-                        Amount = orderProfile.Total,
-                        CustomerId = orderProfile.CustomerId,
-                        Id = orderProfile.Id,
-                        InvoiceNo = orderProfile.InvoiceNo
+                        Amount = orderProfile.Total.ToString(),
+                        Metadata = new Dictionary<string, string>
+                        {
+                            { "invoice_no", orderProfile.InvoiceNo },
+                            { "customer_id", orderProfile.CustomerId }
+                        },
+                        RedirectUrl = "https://deltaboxit.vercel.app/order/success",
+                        CancelUrl = "https://deltaboxit.vercel.app/order/cancel",
+                        WebhookUrl = ""
                     };
 
-                    return Result.Success("Success", "200", new[] { "Order created successfully." }, orderResponse);
+                    var paymentResponse = await _paymentService.CreatePaymentCharge(paymentRequest);
+
+                    //Add payment response to the final result
+                    return Result.Success("Order and payment charge created successfully.", "200",
+                        new[] { "Order and payment initiated successfully." },
+                        new {Payment = paymentResponse});
                 }
                 catch (Exception ex)
                 {
