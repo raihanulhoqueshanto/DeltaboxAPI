@@ -23,6 +23,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         public int Quantity { get; set; }
         public decimal Price { get; set; }
         public decimal FinalPrice { get; set; }
+        public decimal DiscountAmount { get; set; }
         public string StockStatus { get; set; }
         public string ThumbnailImage { get; set; }
     }

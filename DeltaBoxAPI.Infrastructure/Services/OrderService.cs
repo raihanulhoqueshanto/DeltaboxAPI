@@ -124,6 +124,9 @@ namespace DeltaboxAPI.Infrastructure.Services
                                                (currentDate >= pv.DiscountStartDate && currentDate <= pv.DiscountEndDate
                                                    ? pv.DiscountAmount
                                                    : 0m)),
+                                           DiscountAmount = currentDate >= pv.DiscountStartDate && currentDate <= pv.DiscountEndDate
+                                                   ? pv.DiscountAmount
+                                                   : 0m,
                                            StockStatus = pv.StockQuantity > 0 ? "In Stock" : "Out of Stock",
                                            ThumbnailImage = pp.ThumbnailImage
                                        }).ToListAsync();
@@ -217,6 +220,9 @@ namespace DeltaboxAPI.Infrastructure.Services
                                               (currentDate >= pv.DiscountStartDate && currentDate <= pv.DiscountEndDate
                                                   ? pv.DiscountAmount
                                                   : 0m)) * c.Quantity,
+                                          DiscountAmount = currentDate >= pv.DiscountStartDate && currentDate <= pv.DiscountEndDate
+                                                  ? pv.DiscountAmount
+                                                  : 0m,
                                           StockStatus = pv.StockQuantity > 0 ? "In Stock" : "Out of Stock",
                                           ThumbnailImage = pp.ThumbnailImage
                                       }).ToListAsync();
