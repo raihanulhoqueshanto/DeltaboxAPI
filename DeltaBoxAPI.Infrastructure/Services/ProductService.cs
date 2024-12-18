@@ -660,7 +660,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             var queryBuilder = new StringBuilder();
             var parameter = new DynamicParameters();
 
-            queryBuilder.AppendLine(@"SELECT p.*, pc.name as category_name, COUNT(*) OVER() as TotalItems FROM product_profile p LEFT JOIN product_category pc ON p.category_id = pc.id");
+            queryBuilder.AppendLine(@"SELECT p.*, pc.name as category_name, LOWER(REPLACE(REPLACE(REPLACE(p.name, ' ', '-'), '&', 'and'), ',', '')) AS Slug, COUNT(*) OVER() as TotalItems FROM product_profile p LEFT JOIN product_category pc ON p.category_id = pc.id");
 
             if (request.Id != null)
             {
