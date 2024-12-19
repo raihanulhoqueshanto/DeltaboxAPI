@@ -349,7 +349,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                     //Prepare UddoktaPaymentRequest and call CreatePaymentCharge
                     var paymentRequest = new UddoktaPaymentRequest
                     {
-                        FullName = $"{orderProfile.FirstName} {orderProfile.LastName}".Trim(),
+                        FullName = orderProfile.Name.Trim(),
                         Email = orderProfile.Email,
                         Amount = orderProfile.Total.ToString(),
                         Metadata = new Dictionary<string, string>
@@ -440,9 +440,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             {
                 InvoiceNo = invoiceNo,
                 CustomerId = customerId.ToString(),
-                FirstName = request.FirstName,
-                LastName = request.LastName,
-                Country = request.Country,
+                Name = request.Name,
                 Email = request.Email,
                 PhoneNumber = request.PhoneNumber,
                 PromotionCode = request.PromotionCode,

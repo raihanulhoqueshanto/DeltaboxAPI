@@ -22,14 +22,8 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Order
         [Column("customer_id")]
         public string? CustomerId { get; set; }
 
-        [Column("first_name")]
-        public string? FirstName { get; set; }
-
-        [Column("last_name")]
-        public string? LastName { get; set; }
-
-        [Column("country")]
-        public string? Country { get; set; }
+        [Column("name")]
+        public string? Name { get; set; }
 
         [Column("email")]
         public string? Email { get; set; }
