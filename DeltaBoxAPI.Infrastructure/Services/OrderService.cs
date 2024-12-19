@@ -497,6 +497,7 @@ namespace DeltaboxAPI.Infrastructure.Services
                     InvoiceNo = orderProfile.InvoiceNo,
                     ProductId = product.Id,
                     ProductName = product.Name,
+                    ThumbnailImage = product.ThumbnailImage,
                     ProductVariantId = variant.Id,
                     ProductVariantName = variant.Name,
                     Sku = variant.SKU,

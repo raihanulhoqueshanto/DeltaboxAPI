@@ -31,6 +31,9 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Order
         [Column("product_name")]
         public string? ProductName { get; set; }
 
+        [Column("thumbnail_image")]
+        public string? ThumbnailImage { get; set; }
+
         [Column("product_variant_id")]
         public int ProductVariantId { get; set; }
 
