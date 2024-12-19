@@ -121,7 +121,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             var queryBuilder = new StringBuilder();
             var parameter = new DynamicParameters();
 
-            queryBuilder.AppendLine("SELECT product_category.*, count(*) over() as TotalItems FROM product_category ");
+            queryBuilder.AppendLine("SELECT product_category.*, LOWER(REPLACE(REPLACE(REPLACE(product_category.name, ' ', '-'), '&', 'and'), ',', '')) AS Slug, count(*) over() as TotalItems FROM product_category ");
 
             if (request.Id != null)
             {
