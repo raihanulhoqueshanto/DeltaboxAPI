@@ -245,9 +245,41 @@ namespace DeltaboxAPI.Infrastructure.Services
             return Result.Success("Success", "200", new[] { "Promotion code applied successfully." }, response);
         }
 
-        public Task<Result> ApplyRedeemedPoints(RedeemedPointRequest request)
+        public async Task<Result> ApplyRedeemedPoints(RedeemedPointRequest request)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(request.RedeemedPoint))
+            {
+                return Result.Failure("Failed", "500", new[] { "Redeemed point permission is required!" }, null);
+            }
+            var rewardPointObj = await _context.RewardPoints.FirstOrDefaultAsync(c => c.CustomerId == _currentUserService.UserId.ToString());
+            if (rewardPointObj != null)
+            {
+                var rewardPointBalance = rewardPointObj.Point - rewardPointObj.RedeemedPoint;
+                decimal redeemedPoint = 0;
+
+                if(rewardPointBalance > (request.SubTotal - request.PromotionCodeAmount))
+                {
+                    redeemedPoint = request.SubTotal - request.PromotionCodeAmount;
+                }
+                else
+                {
+                    redeemedPoint = rewardPointBalance ?? 0;
+                }
+
+                RedeemedPointResponse response = new RedeemedPointResponse()
+                {
+                    RedeemedPoint = redeemedPoint,
+                    SubTotal = request.SubTotal,
+                    PromotionCodeAmount = request.PromotionCodeAmount,
+                    Total = request.SubTotal - request.PromotionCodeAmount - redeemedPoint
+                };
+
+                return Result.Success("Success", "200", new[] { "Points redeemed successfully." }, response);
+            }
+            else
+            {
+                return Result.Failure("Failed", "404", new[] { "No reward points found. Make purchases to earn reward points." }, null);
+            }
         }
     }
 }
