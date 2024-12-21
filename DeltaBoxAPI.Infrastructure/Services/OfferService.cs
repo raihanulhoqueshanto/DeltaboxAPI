@@ -200,12 +200,52 @@ namespace DeltaboxAPI.Infrastructure.Services
             return rewardPoint;
         }
 
-        public Task<PromotionCodeResponse> ApplyPromotionCode(PromotionCodeRequest request)
+        public async Task<Result> ApplyPromotionCode(PromotionCodeRequest request)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrEmpty(request.Code))
+            {
+                return Result.Failure("Failed", "500", new[] { "Promotion code is required!" }, null);
+            }
+
+            // Check if promotion code exists and is valid
+            var promotionCode = await _context.PromotionCodes
+                .FirstOrDefaultAsync(c =>
+                    c.Code == request.Code &&
+                    c.IsActive == "Y" &&
+                    c.PromotionStartDate <= DateTime.Now &&
+                    DateTime.Now <= c.PromotionEndDate);
+
+            if (promotionCode == null)
+            {
+                return Result.Failure("Failed", "404", new[] { "Invalid promotion code." }, null);
+            }
+
+            // Check usage count for one-time codes
+            if (promotionCode.OneTime == "Y")
+            {
+                var usageCount = await _context.OrderProfiles
+                    .CountAsync(o => o.CustomerId == _currentUserService.UserId.ToString() &&
+                                    o.PromotionCode == request.Code);
+
+                if (usageCount > 0)
+                {
+                    return Result.Failure("Failed", "406", new[] { "Already used." }, null);
+                }
+            }
+
+            // Calculate total and return success response
+            var response = new PromotionCodeResponse
+            {
+                PromotionCodeAmount = promotionCode.Amount,
+                SubTotal = request.SubTotal,
+                RedeemedPoint = request.RedeemedPoint,
+                Total = request.SubTotal - request.RedeemedPoint - promotionCode.Amount
+            };
+
+            return Result.Success("Success", "200", new[] { "Promotion code applied successfully." }, response);
         }
 
-        public Task<RedeemedPointResponse> ApplyRedeemedPoints(RedeemedPointRequest request)
+        public Task<Result> ApplyRedeemedPoints(RedeemedPointRequest request)
         {
             throw new NotImplementedException();
         }

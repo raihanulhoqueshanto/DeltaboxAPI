@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using DeltaBoxAPI.Application.Common.Models;
+using MediatR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Commands
 {
-    public class ApplyPromotionCode : IRequest<PromotionCodeResponse>
+    public class ApplyPromotionCode : IRequest<Result>
     {
         public PromotionCodeRequest PromotionCodeRequest { get; set; }
 
@@ -17,7 +18,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Commands
         }
     }
 
-    public class ApplyPromotionCodeHandler : IRequestHandler<ApplyPromotionCode, PromotionCodeResponse>
+    public class ApplyPromotionCodeHandler : IRequestHandler<ApplyPromotionCode, Result>
     {
         private readonly IOfferService _offerService;
 
@@ -26,7 +27,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Commands
             _offerService = offerService ?? throw new ArgumentNullException(nameof(offerService));
         }
 
-        public async Task<PromotionCodeResponse> Handle(ApplyPromotionCode request, CancellationToken cancellationToken)
+        public async Task<Result> Handle(ApplyPromotionCode request, CancellationToken cancellationToken)
         {
             var result = await _offerService.ApplyPromotionCode(request.PromotionCodeRequest);
             return result;
