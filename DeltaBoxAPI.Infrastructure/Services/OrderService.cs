@@ -328,6 +328,12 @@ namespace DeltaboxAPI.Infrastructure.Services
                     // Update product variant stocks
                     await UpdateProductVariantStocks(request);
 
+                    // Update cart
+                    if(request.Type.Trim().ToLower() == "cart")
+                    {
+                        await UpdateCart(customerId);
+                    }
+
                     // Save all changes
                     await _context.SaveChangesAsync();
 
@@ -620,6 +626,14 @@ namespace DeltaboxAPI.Infrastructure.Services
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        private async Task UpdateCart(string customerId)
+        {
+            // Perform a batch update directly in the database
+            await _context.Carts
+                .Where(c => c.CustomerId == customerId)
+                .ExecuteUpdateAsync(c => c.SetProperty(cart => cart.IsActive, "N"));
         }
 
         private async Task UpdateProductVariantStocks(CreateOrderRequest request)

@@ -16,6 +16,7 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         public decimal SubTotal { get; set; }
         public decimal Total { get; set; }
         public decimal? CoinRedeemed { get; set; }
+        public string Type { get; set; }
         public List<OrderDetailRequest> Details { get; set; }
     }
 
