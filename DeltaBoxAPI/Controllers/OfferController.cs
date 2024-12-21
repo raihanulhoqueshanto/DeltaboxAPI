@@ -1,4 +1,5 @@
 ﻿using DeltaboxAPI.Application.Common.Pagings;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Commands;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer.Queries;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
@@ -60,6 +61,36 @@ namespace DeltaboxAPI.Controllers
             try
             {
                 var result = await _mediator.Send(new GetRewardPoints());
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> ApplyPromotionCode(PromotionCodeRequest command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new ApplyPromotionCode(command));
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> ApplyRedeemedPoints(RedeemedPointRequest command)
+        {
+            try
+            {
+                var result = await _mediator.Send(new ApplyRedeemedPoints(command));
                 return Ok(result);
             }
             catch (Exception ex)

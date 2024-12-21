@@ -199,5 +199,15 @@ namespace DeltaboxAPI.Infrastructure.Services
 
             return rewardPoint;
         }
+
+        public Task<PromotionCodeResponse> ApplyPromotionCode(PromotionCodeRequest request)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<RedeemedPointResponse> ApplyRedeemedPoints(RedeemedPointRequest request)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
