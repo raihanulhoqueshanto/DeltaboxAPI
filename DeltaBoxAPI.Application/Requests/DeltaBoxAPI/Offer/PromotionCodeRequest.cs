@@ -8,8 +8,8 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer
 {
     public class PromotionCodeRequest
     {
-        public string Code { get; set; }
+        public string PromotionCode { get; set; }
         public decimal SubTotal { get; set; }
-        public decimal RedeemedPoint { get; set; }
+        public decimal CoinRedeemed { get; set; }
     }
 }

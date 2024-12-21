@@ -202,7 +202,7 @@ namespace DeltaboxAPI.Infrastructure.Services
 
         public async Task<Result> ApplyPromotionCode(PromotionCodeRequest request)
         {
-            if (string.IsNullOrEmpty(request.Code))
+            if (string.IsNullOrEmpty(request.PromotionCode))
             {
                 return Result.Failure("Failed", "500", new[] { "Promotion code is required!" }, null);
             }
@@ -210,7 +210,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             // Check if promotion code exists and is valid
             var promotionCode = await _context.PromotionCodes
                 .FirstOrDefaultAsync(c =>
-                    c.Code == request.Code &&
+                    c.Code == request.PromotionCode &&
                     c.IsActive == "Y" &&
                     c.PromotionStartDate <= DateTime.Now &&
                     DateTime.Now <= c.PromotionEndDate);
@@ -225,7 +225,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             {
                 var usageCount = await _context.OrderProfiles
                     .CountAsync(o => o.CustomerId == _currentUserService.UserId.ToString() &&
-                                    o.PromotionCode == request.Code);
+                                    o.PromotionCode == request.PromotionCode);
 
                 if (usageCount > 0)
                 {
@@ -238,8 +238,8 @@ namespace DeltaboxAPI.Infrastructure.Services
             {
                 PromotionCodeAmount = promotionCode.Amount,
                 SubTotal = request.SubTotal,
-                RedeemedPoint = request.RedeemedPoint,
-                Total = request.SubTotal - request.RedeemedPoint - promotionCode.Amount
+                CoinRedeemed = request.CoinRedeemed,
+                Total = request.SubTotal - request.CoinRedeemed - promotionCode.Amount
             };
 
             return Result.Success("Success", "200", new[] { "Promotion code applied successfully." }, response);
@@ -247,7 +247,7 @@ namespace DeltaboxAPI.Infrastructure.Services
 
         public async Task<Result> ApplyRedeemedPoints(RedeemedPointRequest request)
         {
-            if (string.IsNullOrEmpty(request.RedeemedPoint))
+            if (string.IsNullOrEmpty(request.CoinRedeemed))
             {
                 return Result.Failure("Failed", "500", new[] { "Redeemed point permission is required!" }, null);
             }
@@ -268,7 +268,7 @@ namespace DeltaboxAPI.Infrastructure.Services
 
                 RedeemedPointResponse response = new RedeemedPointResponse()
                 {
-                    RedeemedPoint = redeemedPoint,
+                    CoinRedeemed = redeemedPoint,
                     SubTotal = request.SubTotal,
                     PromotionCodeAmount = request.PromotionCodeAmount,
                     Total = request.SubTotal - request.PromotionCodeAmount - redeemedPoint
