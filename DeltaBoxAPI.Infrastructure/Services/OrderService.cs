@@ -304,23 +304,16 @@ namespace DeltaboxAPI.Infrastructure.Services
                     // Generate invoice number
                     var invoiceNo = await GenerateInvoiceNumber();
 
-                    // Calculate promotion code amount
-                    decimal promotionCodeAmount = 0;
-                    if (!string.IsNullOrEmpty(request.PromotionCode))
-                    {
-                        promotionCodeAmount = await CalculatePromotionCodeAmount(request.PromotionCode);
-                    }
-
                     // Create order profile
                     var orderProfile = await CreateOrderProfile(
                         customerId,
                         invoiceNo,
-                        request,
-                        promotionCodeAmount
+                        request
+                        /*promotionCodeAmount*/
                     );
 
                     // Process order details & retrieved redemeed point
-                    var redeemedPoint = await CreateOrderDetails(orderProfile, request, promotionCodeAmount);
+                    var redeemedPoint = await CreateOrderDetails(orderProfile, request, orderProfile.PromotionCodeAmount);
 
                     // Update reward points
                     await ProcessRewardPoints(customerId, orderProfile.Total, redeemedPoint);
@@ -339,18 +332,6 @@ namespace DeltaboxAPI.Infrastructure.Services
 
                     // Commit transaction
                     await transaction.CommitAsync();
-
-                    //OrderResponse orderResponse = new OrderResponse()
-                    //{
-                    //    FullName = $"{orderProfile.FirstName} {orderProfile.LastName}".Trim(), // Ensures proper spacing
-                    //    Email = orderProfile.Email,
-                    //    Amount = orderProfile.Total,
-                    //    CustomerId = orderProfile.CustomerId,
-                    //    Id = orderProfile.Id,
-                    //    InvoiceNo = orderProfile.InvoiceNo
-                    //};
-
-                    //return Result.Success("Success", "200", new[] { "Order created successfully." }, orderResponse);
 
                     //Prepare UddoktaPaymentRequest and call CreatePaymentCharge
                     var paymentRequest = new UddoktaPaymentRequest
@@ -409,30 +390,15 @@ namespace DeltaboxAPI.Infrastructure.Services
             return newInvoiceNo;
         }
 
-        private async Task<decimal> CalculatePromotionCodeAmount(string promotionCode)
-        {
-            if (string.IsNullOrWhiteSpace(promotionCode)) return 0;
-
-            var now = DateTime.Now;
-            var promoCodeEntity = await _context.PromotionCodes
-                .FirstOrDefaultAsync(p =>
-                    p.Code == promotionCode &&
-                    p.IsActive == "Y" &&
-                    p.PromotionStartDate <= now &&
-                    p.PromotionEndDate >= now
-                );
-
-            return promoCodeEntity?.Amount ?? 0;
-        }
-
         private async Task<OrderProfile> CreateOrderProfile(
             string customerId,
             string invoiceNo,
-            CreateOrderRequest request,
-            decimal promotionCodeAmount)
+            CreateOrderRequest request
+            )
         {
             // Check promotion code usage
             int noOfUse = 0;
+            decimal promotionCodeAmount = 0;
             if (!string.IsNullOrEmpty(request.PromotionCode))
             {
                 noOfUse = await _context.OrderProfiles
@@ -440,6 +406,35 @@ namespace DeltaboxAPI.Infrastructure.Services
                     o.CustomerId == customerId.ToString() &&
                     o.PromotionCode == request.PromotionCode
                     ) + 1;
+
+                var promoCodeObj = await _context.PromotionCodes.FirstOrDefaultAsync(c => 
+                                    c.Code.Trim().ToLower() == request.PromotionCode.Trim().ToLower() 
+                                    && c.IsActive == "Y" 
+                                    && c.PromotionStartDate<= DateTime.Now 
+                                    && DateTime.Now <= c.PromotionEndDate);
+
+                if (promoCodeObj != null)
+                {
+                    if (promoCodeObj.OneTime.ToUpper() == "Y")
+                    {
+                        if (noOfUse < 2)
+                        {
+                            promotionCodeAmount = promoCodeObj.Amount;
+                        }
+                        else
+                        {
+                            promotionCodeAmount = 0;
+                        }
+                    }
+                    else
+                    {
+                        promotionCodeAmount = promoCodeObj.Amount;
+                    }
+                }
+                else
+                {
+                    promotionCodeAmount = 0;
+                }
             }       
 
             var orderProfile = new OrderProfile
