@@ -14,5 +14,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer
     {
         Task<Result> CreateOrUpdatePromotionCode(PromotionCode request);
         Task<PagedList<PromotionCodeVM>> GetPromotionCode(GetPromotionCode request);
+        Task<RewardPointVM> GetRewardPoints();
     }
 }

@@ -52,5 +52,20 @@ namespace DeltaboxAPI.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetRewardPoints()
+        {
+            try
+            {
+                var result = await _mediator.Send(new GetRewardPoints());
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -177,5 +177,27 @@ namespace DeltaboxAPI.Infrastructure.Services
             var result = await _mysqlContext.GetPagedListAsync<PromotionCodeVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
             return result;
         }
+
+        public async Task<RewardPointVM> GetRewardPoints()
+        {
+            decimal rewardPoints = 0;
+            var customerId = _currentUserService.UserId;
+            var rewardPointObj = await _context.RewardPoints.FirstOrDefaultAsync(c => c.CustomerId == customerId);
+            if (rewardPointObj != null)
+            {
+                rewardPoints = rewardPointObj.Point - rewardPointObj.RedeemedPoint ?? 0;
+            }
+            else
+            {
+                rewardPoints = 0;
+            }
+
+            RewardPointVM rewardPoint = new RewardPointVM()
+            {
+                RewardPointBalance = rewardPoints
+            };
+
+            return rewardPoint;
+        }
     }
 }
