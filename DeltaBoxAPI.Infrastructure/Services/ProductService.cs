@@ -1276,6 +1276,8 @@ namespace DeltaboxAPI.Infrastructure.Services
         pp.id AS Id, 
         pp.name AS Name, 
         pp.category_id AS CategoryId,
+        pc.name AS CategoryName,
+        LOWER(REPLACE(REPLACE(REPLACE(pc.name, ' ', '-'), '&', 'and'), ',', '')) AS Slug,
         pp.short_description AS ShortDescription, 
         pp.description AS Description, 
         pp.thumbnail_image AS ThumbnailImage, 
@@ -1283,6 +1285,10 @@ namespace DeltaboxAPI.Infrastructure.Services
         COUNT(DISTINCT pr.id) AS ReviewCount
     FROM 
         product_profile pp
+    JOIN
+        product_category pc
+    ON
+        pp.category_id = pc.id AND pc.is_active = 'Y'
     LEFT JOIN 
         product_review pr 
     ON 
