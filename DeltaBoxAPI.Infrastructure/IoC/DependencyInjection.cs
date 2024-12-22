@@ -1,6 +1,7 @@
 ﻿using DeltaboxAPI.Application.Common.Interfaces;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Auth;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Banner;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Blog;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Brand;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Faqs;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Offer;
@@ -47,6 +48,7 @@ namespace DeltaboxAPI.Infrastructure.IoC
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IOrderService, OrderService>();
             services.AddScoped<IOfferService, OfferService>();
+            services.AddScoped<IBlogService, BlogService>();
 
             return services;
         }

@@ -16,6 +16,7 @@ using DeltaboxAPI.Domain.Entities.DeltaBox.Banner;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Brand;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
+using DeltaboxAPI.Domain.Entities.DeltaBox.Blog;
 
 namespace DeltaBoxAPI.Infrastructure.Data
 {
@@ -52,6 +53,7 @@ namespace DeltaBoxAPI.Infrastructure.Data
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<RewardPoint> RewardPoints { get; set; }
         public DbSet<PaymentInformation> PaymentInformations { get; set; }
+        public DbSet<Article> Articles { get; set; }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = new CancellationToken())
         {

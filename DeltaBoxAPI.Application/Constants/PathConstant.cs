@@ -15,5 +15,6 @@ namespace DeltaboxAPI.Application.Constants
         public static string BANNER_IMAGE_PATH = "/Images/Banner/BannerImage/";
         public static string COMMON_IMAGE_PATH = "/Images/Common/CommonImage/";
         public static string BRAND_IMAGE_PATH = "/Images/Brand/BrandImage/";
+        public static string BLOG_IMAGE_PATH = "/Images/Blog/BlogImage/";
     }
 }

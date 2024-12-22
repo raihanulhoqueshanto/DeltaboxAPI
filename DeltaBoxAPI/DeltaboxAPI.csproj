@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <Folder Include="Images\Banner\BannerImage\" />
+    <Folder Include="Images\Blog\BlogImage\" />
     <Folder Include="Images\Brand\BrandImage\" />
     <Folder Include="Images\Common\CommonImage\" />
     <Folder Include="Images\Payment\PaymentProof\" />
