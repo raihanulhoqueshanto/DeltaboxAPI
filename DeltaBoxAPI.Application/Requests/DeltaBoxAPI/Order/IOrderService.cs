@@ -1,4 +1,6 @@
-﻿using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Commands;
+﻿using DeltaboxAPI.Application.Common.Pagings;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Commands;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Queries;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
 using DeltaBoxAPI.Application.Common.Models;
 using System;
@@ -19,5 +21,6 @@ namespace DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order
         Task<GetCartVM> GetCart();
         Task<Result> UpdateCartQuantity(UpdateCartQuantityRequest request);
         Task<Result> CreateOrder(CreateOrderRequest request);
+        Task<PagedList<OrderVM>> GetOrder(GetOrder request);
     }
 }

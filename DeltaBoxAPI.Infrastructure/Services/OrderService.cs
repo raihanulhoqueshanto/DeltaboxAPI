@@ -1,15 +1,20 @@
-﻿using DeltaboxAPI.Application.Common.Interfaces;
+﻿using Dapper;
+using DeltaboxAPI.Application.Common.Interfaces;
+using DeltaboxAPI.Application.Common.Pagings;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Commands;
+using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Order.Queries;
 using DeltaboxAPI.Application.Requests.DeltaBoxAPI.Payment;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Offer;
 using DeltaboxAPI.Domain.Entities.DeltaBox.Order;
+using DeltaboxAPI.Infrastructure.Utils;
 using DeltaBoxAPI.Application.Common.Models;
 using DeltaBoxAPI.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -649,6 +654,109 @@ namespace DeltaboxAPI.Infrastructure.Services
             }
 
             await _context.SaveChangesAsync();
+        }
+
+        public async Task<PagedList<OrderVM>> GetOrder(GetOrder request)
+        {
+            string conditionClause = " ";
+            var queryBuilder = new StringBuilder();
+            var parameter = new DynamicParameters();
+
+            // Main query joining order_profile with payment_information
+            queryBuilder.AppendLine(@"
+        SELECT 
+            op.*,
+            pi.payment_method,
+            pi.sender_number,
+            pi.transaction_id,
+            pi.date,
+            pi.status,
+            pi.amount,
+            pi.fee,
+            pi.charged_amount,
+            COUNT(*) OVER() as TotalItems
+        FROM order_profile op
+        LEFT JOIN payment_information pi ON op.invoice_no = pi.invoice_no");
+
+            // Add conditions based on request parameters
+            if (request.Id.HasValue)
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} op.id = @Id");
+                conditionClause = " WHERE ";
+                parameter.Add("Id", request.Id, DbType.Int32, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.Keyword))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} (op.name LIKE @Keyword OR op.email LIKE @Keyword OR op.phone_number LIKE @Keyword)");
+                conditionClause = " WHERE ";
+                parameter.Add("Keyword", $"%{request.Keyword}%", DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.InvoiceNo))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} op.invoice_no = @InvoiceNo");
+                conditionClause = " WHERE ";
+                parameter.Add("InvoiceNo", request.InvoiceNo, DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.OrderStatus))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} op.order_status = @OrderStatus");
+                conditionClause = " WHERE ";
+                parameter.Add("OrderStatus", request.OrderStatus, DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.PaymentMethod))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pi.payment_method = @PaymentMethod");
+                conditionClause = " WHERE ";
+                parameter.Add("PaymentMethod", request.PaymentMethod, DbType.String, ParameterDirection.Input);
+            }
+
+            if (!string.IsNullOrEmpty(request.Status))
+            {
+                queryBuilder.AppendLine($"{Helper.GetSqlCondition(conditionClause, "AND")} pi.status = @Status");
+                conditionClause = " WHERE ";
+                parameter.Add("Status", request.Status, DbType.String, ParameterDirection.Input);
+            }
+
+            // Handle pagination
+            if (string.IsNullOrEmpty(request.GetAll) || request.GetAll.ToUpper() != "Y")
+            {
+                queryBuilder.AppendLine("LIMIT @Offset, @ItemsPerPage");
+                parameter.Add("Offset", (request.CurrentPage - 1) * request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+                parameter.Add("ItemsPerPage", request.ItemsPerPage, DbType.Int32, ParameterDirection.Input);
+            }
+
+            // Execute main query to get orders
+            string query = queryBuilder.ToString();
+            var orders = await _mysqlContext.GetPagedListAsync<OrderVM>(request.CurrentPage, request.ItemsPerPage, query, parameter);
+
+            // Load order details for each order using Entity Framework
+            foreach (var order in orders)
+            {
+                order.OrderDetails = await _context.OrderDetails
+                    .Where(od => od.InvoiceNo == order.InvoiceNo &&
+                                 (request.OrderItemStatus == null || od.OrderItemStatus == request.OrderItemStatus))
+                    .Select(od => new OrderDetailsVM
+                    {
+                        ItemInvoiceNo = od.ItemInvoiceNo,
+                        InvoiceNo = od.InvoiceNo,
+                        ProductName = od.ProductName,
+                        ThumbnailImage = od.ThumbnailImage,
+                        ProductVariantName = od.ProductVariantName,
+                        Sku = od.Sku,
+                        UnitPrice = od.UnitPrice,
+                        FinalPrice = od.FinalPrice,
+                        Quantity = od.Quantity,
+                        SubTotal = od.SubTotal,
+                        Total = od.Total,
+                        OrderItemStatus = od.OrderItemStatus
+                    })
+                    .ToListAsync();
+            }
+            return orders;
         }
     }
 }
