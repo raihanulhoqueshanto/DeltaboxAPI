@@ -33,7 +33,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Requests\DeltaBoxAPI\Blog\Queries\" />
     <Folder Include="Requests\DeltaBoxAPI\Token\Queries\" />
   </ItemGroup>
 
