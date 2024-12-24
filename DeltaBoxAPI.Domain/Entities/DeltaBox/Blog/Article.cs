@@ -22,6 +22,9 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Blog
         [Column("writer_name")]
         public string WriterName { get; set; }
 
+        [Column("category_id")]
+        public int CategoryId { get; set; }
+
         [Column("image")]
         public string Image { get; set; }
 
