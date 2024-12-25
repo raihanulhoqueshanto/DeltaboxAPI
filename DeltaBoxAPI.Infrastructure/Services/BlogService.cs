@@ -87,8 +87,10 @@ namespace DeltaboxAPI.Infrastructure.Services
                     // Update article properties
                     existingArticle.Name = request.Name;
                     existingArticle.WriterName = request.WriterName;
+                    existingArticle.CategoryId = request.CategoryId;
                     existingArticle.Image = request.Image;
                     existingArticle.Description = request.Description;
+                    existingArticle.ShortDescription = request.ShortDescription;
                     existingArticle.IsActive = request.IsActive;
 
                     _context.Articles.Update(existingArticle);
@@ -133,7 +135,7 @@ namespace DeltaboxAPI.Infrastructure.Services
             var queryBuilder = new StringBuilder();
             var parameter = new DynamicParameters();
 
-            queryBuilder.AppendLine("SELECT article.*, count(*) over() as TotalItems FROM article ");
+            queryBuilder.AppendLine("SELECT article.*, LOWER(REPLACE(REPLACE(REPLACE(name, ' ', '-'), '&', 'and'), ',', '')) AS Slug, count(*) over() as TotalItems FROM article ");
 
             if (request.Id != null)
             {

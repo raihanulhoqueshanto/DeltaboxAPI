@@ -31,6 +31,9 @@ namespace DeltaboxAPI.Domain.Entities.DeltaBox.Blog
         [Column("description")]
         public string Description { get; set; }
 
+        [Column("short_description")]
+        public string? ShortDescription { get; set; }
+
         [Column("is_active")]
         public string IsActive { get; set; }
     }
